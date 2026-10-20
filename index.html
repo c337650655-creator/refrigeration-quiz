@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>制冷实操考试刷题系统</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: #f0f2f5;
+  color: #333;
+  min-height: 100vh;
+}
+.header {
+  background: linear-gradient(135deg, #1a73e8, #0d47a1);
+  color: white;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.header h1 { font-size: 22px; margin-bottom: 5px; }
+.header p { font-size: 13px; opacity: 0.9; }
+.container { max-width: 800px; margin: 0 auto; padding: 20px; }
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.stat-card {
+  background: white;
+  border-radius: 10px;
+  padding: 15px 10px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.stat-card .num { font-size: 24px; font-weight: 700; color: #1a73e8; }
+.stat-card .label { font-size: 12px; color: #666; margin-top: 4px; }
+
+.mode-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.mode-tab {
+  padding: 8px 16px;
+  background: white;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 13px;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+}
+.mode-tab.active {
+  background: #1a73e8;
+  color: white;
+  border-color: #1a73e8;
+}
+.mode-tab:hover:not(.active) { border-color: #1a73e8; color: #1a73e8; }
+
+.subject-list {
+  background: white;
+  border-radius: 10px;
+  padding: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  margin-bottom: 16px;
+}
+.subject-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.subject-item:last-child { border-bottom: none; }
+.subject-item:hover { background: #f5f8ff; }
+.subject-item .name { font-size: 14px; }
+.subject-item .count {
+  background: #e8f0fe;
+  color: #1a73e8;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+.subject-item.done .count { background: #e6f4ea; color: #137333; }
+
+.quiz-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.back-btn {
+  padding: 6px 14px;
+  background: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #666;
+}
+.progress-bar {
+  flex: 1;
+  height: 6px;
+  background: #e0e0e0;
+  border-radius: 3px;
+  margin: 0 15px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: #1a73e8;
+  transition: width 0.3s;
+}
+.question-num { font-size: 13px; color: #666; }
+
+.question-card {
+  background: white;
+  border-radius: 10px;
+  padding: 25px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  margin-bottom: 16px;
+}
+.q-type-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  margin-bottom: 12px;
+}
+.q-type-tag.single { background: #e8f0fe; color: #1a73e8; }
+.q-type-tag.multiple { background: #fce8e6; color: #c5221f; }
+.q-type-tag.judge { background: #fef7e0; color: #b06000; }
+.q-source-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  margin-bottom: 12px;
+  margin-left: 6px;
+  background: #f1f3f4;
+  color: #5f6368;
+}
+.q-subject {
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 10px;
+}
+.q-stem {
+  font-size: 16px;
+  line-height: 1.7;
+  margin-bottom: 20px;
+  font-weight: 500;
+}
+.options-list { display: flex; flex-direction: column; gap: 10px; }
+.option-item {
+  padding: 12px 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.option-item:hover { border-color: #1a73e8; background: #f8faff; }
+.option-item .letter {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.option-item.selected { border-color: #1a73e8; background: #e8f0fe; }
+.option-item.selected .letter { background: #1a73e8; color: white; }
+.option-item.correct { border-color: #137333; background: #e6f4ea; }
+.option-item.correct .letter { background: #137333; color: white; }
+.option-item.wrong { border-color: #c5221f; background: #fce8e6; }
+.option-item.wrong .letter { background: #c5221f; color: white; }
+.option-item.disabled { cursor: default; pointer-events: none; }
+
+.answer-panel {
+  margin-top: 16px;
+  padding: 12px 15px;
+  border-radius: 8px;
+  font-size: 13px;
+  display: none;
+}
+.answer-panel.show { display: block; }
+.answer-panel.right { background: #e6f4ea; color: #137333; }
+.answer-panel.wrong { background: #fce8e6; color: #c5221f; }
+
+.nav-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+.nav-buttons button {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btn-prev { background: #f0f0f0; color: #666; }
+.btn-next { background: #1a73e8; color: white; }
+.btn-submit { background: #137333; color: white; }
+.nav-buttons button:hover { opacity: 0.85; }
+.nav-buttons button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.result-card {
+  background: white;
+  border-radius: 12px;
+  padding: 40px 30px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.result-score {
+  font-size: 48px;
+  font-weight: 700;
+  color: #1a73e8;
+  margin: 15px 0;
+}
+.result-detail {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  margin: 25px 0;
+}
+.result-detail .item {
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+.result-detail .num { font-size: 22px; font-weight: 600; }
+.result-detail .label { font-size: 12px; color: #666; margin-top: 4px; }
+
+@media (max-width: 600px) {
+  .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .container { padding: 12px; }
+  .question-card { padding: 18px; }
+  .q-stem { font-size: 15px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>制冷实操考试刷题系统</h1>
+  <p>安维实操 + 运行实操 题库</p>
+</div>
+
+<div class="container">
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="num" id="stat-total">0</div>
+      <div class="label">总题数</div>
+    </div>
+    <div class="stat-card">
+      <div class="num" id="stat-done">0</div>
+      <div class="label">已练习</div>
+    </div>
+    <div class="stat-card">
+      <div class="num" id="stat-correct">0%</div>
+      <div class="label">正确率</div>
+    </div>
+    <div class="stat-card">
+      <div class="num" id="stat-wrong">0</div>
+      <div class="label">错题数</div>
+    </div>
+  </div>
+
+  <div id="home-view">
+    <div class="mode-tabs">
+      <div class="mode-tab active" data-mode="all" onclick="switchMode('all')">全部题目</div>
+      <div class="mode-tab" data-mode="wrong" onclick="switchMode('wrong')">错题重练</div>
+      <div class="mode-tab" data-mode="random" onclick="switchMode('random')">随机顺序</div>
+    </div>
+    <div class="subject-list" id="subject-list"></div>
+  </div>
+
+  <div id="quiz-view" style="display:none;">
+    <div class="quiz-header">
+      <button class="back-btn" onclick="goHome()">← 返回</button>
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="question-num" id="question-num">1/10</div>
+    </div>
+    <div class="question-card" id="question-card"></div>
+    <div class="nav-buttons">
+      <button class="btn-prev" onclick="prevQuestion()">上一题</button>
+      <button class="btn-submit" id="btn-submit" onclick="submitAnswer()" style="display:none;">提交答案</button>
+      <button class="btn-next" id="btn-next" onclick="nextQuestion()">下一题</button>
+    </div>
+  </div>
+
+  <div id="result-view" style="display:none;"></div>
+</div>
+
+<script>
+const ALL_QUESTIONS = [{"subject": "K11 单相交流异步电动机检测操作", "stem": "单相交流异步电动机为（ ）功率交流电动机，采用单相交流电供电。", "options": [{"letter": "A", "text": "大"}, {"letter": "B", "text": "小"}, {"letter": "C", "text": "中"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "K11 单相交流异步电动机检测操作", "stem": "单相异步电动机的定子包括机座、铁芯、（ ）三大部分。", "options": [{"letter": "A", "text": "机顶"}, {"letter": "B", "text": "电机"}, {"letter": "C", "text": "绕组"}], "answer": "C", "type": "single", "source": "安维实操"}, {"subject": "K11 单相交流异步电动机检测操作", "stem": "单相交流电动机有（ ）绕组。", "options": [{"letter": "A", "text": "3"}, {"letter": "B", "text": "2"}, {"letter": "C", "text": "1"}], "answer": "C", "type": "single", "source": "安维实操"}, {"subject": "K11 单相交流异步电动机检测操作", "stem": "单相交流异步电动机检测绕组的直流电阻，应用以下哪个工具？", "options": [{"letter": "A", "text": "万用表欧姆档"}, {"letter": "B", "text": "兆欧表"}, {"letter": "C", "text": "电压表"}, {"letter": "D", "text": "钳形电流表"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "K11 单相交流异步电动机检测操作", "stem": "兆欧表检测绝缘电阻时电阻值应大于1MΩ。", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "B", "type": "judge", "source": "安维实操"}, {"subject": "K12 空调设备常用的低压电器认知", "stem": "交流电机有异步电机和（）电机两大类。", "options": [{"letter": "A", "text": "同步"}, {"letter": "B", "text": "等步"}, {"letter": "C", "text": "差步"}], "answer": "A", "type": "single", "source": "安维实操"}, {"subject": "K12 空调设备常用的低压电器认知", "stem": "空调器室内外风扇电流电动机采用的均为（）感应电机。", "options": [{"letter": "A", "text": "电力"}, {"letter": "B", "text": "电容"}, {"letter": "C", "text": "电阻"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "K12 空调设备常用的低压电器认知", "stem": "空调设备常用低压电器中，开关，熔断器通常使用万用表的哪个档位检测通断情况。", "options": [{"letter": "A", "text": "直流档"}, {"letter": "B", "text": "交流档"}, {"letter": "C", "text": "通断档"}, {"letter": "D", "text": "欧姆档"}], "answer": "D", "type": "single", "source": "安维实操"}, {"subject": "K12 空调设备常用的低压电器认知", "stem": "以下哪些电器属于空调设备常用的低压电器？", "options": [{"letter": "A", "text": "接触器"}, {"letter": "B", "text": "断路器"}, {"letter": "C", "text": "空开"}, {"letter": "D", "text": "热继电器"}], "answer": "ACD", "type": "multiple", "source": "安维实操"}, {"subject": "K12 空调设备常用的低压电器认知", "stem": "电气工程图的图幅规格分5 类，为A0-A4，其中A2 图纸的图幅尺寸为（）。", "options": [{"letter": "A", "text": "841×1189"}, {"letter": "B", "text": "594×841"}, {"letter": "C", "text": "420×594"}, {"letter": "D", "text": "297×420"}], "answer": "C", "type": "single", "source": "安维实操"}, {"subject": "K12 空调设备常用的低压电器认知", "stem": "空调设备中常用的接触器，热继电器需使用（ ）检测触电（触点）的通断情况？", "options": [{"letter": "A", "text": "钳形电流表"}, {"letter": "B", "text": "万用表"}, {"letter": "C", "text": "兆欧表"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "K13 钻削的安全操作", "stem": "事故调查组应当自事故发生之日起（ ）天内提交事故调查报告。", "options": [{"letter": "A", "text": "30"}, {"letter": "B", "text": "60"}, {"letter": "C", "text": "90"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "K13 钻削的安全操作", "stem": "钻孔的直径（ ）超过钻床所允许的最大直径。", "options": [{"letter": "A", "text": "可以"}, {"letter": "B", "text": "不能"}, {"letter": "C", "text": "允许"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "K13 钻削的安全操作", "stem": "停止后可以用手握住主轴或卡头使轴停止转动。", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "B", "type": "judge", "source": "安维实操"}, {"subject": "K13 钻削的安全操作", "stem": "清理切屑应使用工具，不能用手直接清理。", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "安维实操"}, {"subject": "K13 钻削的安全操作", "stem": "在进行钻削安全操作时要使用护套线，并装有漏电保护器？", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "安维实操"}, {"subject": "K13 钻削的安全操作", "stem": "进行钻削安全操作时,需要注意哪些事项？", "options": [{"letter": "A", "text": "戴手套"}, {"letter": "B", "text": "禁戴手套"}, {"letter": "C", "text": "工件装卡紧固"}, {"letter": "D", "text": "使用棉丝除屑"}, {"letter": "E", "text": "用毛刷除屑"}], "answer": "BCE", "type": "multiple", "source": "安维实操"}, {"subject": "K13 钻削的安全操作", "stem": "在钻削安全操作时,要根据工件材料选用冷却液，钢件选用？", "options": [{"letter": "A", "text": "肥皂液"}, {"letter": "B", "text": "乙二醇"}, {"letter": "C", "text": "煤油"}, {"letter": "D", "text": "乙醇"}, {"letter": "E", "text": "用毛刷除屑"}], "answer": "A", "type": "single", "source": "安维实操"}, {"subject": "K13 钻削的安全操作", "stem": "砂轮的安全操作有哪些？", "options": [{"letter": "A", "text": "两端砂轮安装要平衡，避免震动"}, {"letter": "B", "text": "砂轮的旋转方向应使磨削后上方飞离砂轮"}, {"letter": "C", "text": "操作者应戴防护镜，磨削时应站在砂轮的侧面或斜侧位置"}, {"letter": "D", "text": "托架与砂轮的距离保持在3mm，且必须安装牢固"}, {"letter": "E", "text": "托架与砂轮的距离保持在10mm，且必须安装牢固"}], "answer": "ACD", "type": "multiple", "source": "安维实操"}, {"subject": "K13 钻削的安全操作", "stem": "磨削时的安全注意事项有哪些？", "options": [{"letter": "A", "text": "启动后先观察砂轮运转情况，转速正常后再进行磨削"}, {"letter": "B", "text": "启动后先观察砂轮运转情况，随后即可进行磨削"}, {"letter": "C", "text": "不要对砂轮施加过大的力，避免撞击、及时修整砂轮"}, {"letter": "D", "text": "对砂轮施加的力越大越好，避免撞击、及时修整砂轮"}], "answer": "AC", "type": "multiple", "source": "安维实操"}, {"subject": "K14 万用表、钳形电流表、绝缘电阻表的正确操作", "stem": "溴化锂溶液避免触及人体的主要部位是（ ）。", "options": [{"letter": "A", "text": "皮肤"}, {"letter": "B", "text": "眼睛"}, {"letter": "C", "text": "毛发"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "K14 万用表、钳形电流表、绝缘电阻表的正确操作", "stem": "在使用万用表之前，应先进行“机械调零”，即在两表笔短接的时候，使万用表指针指在 零电压或零电流的位置上。", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "安维实操"}, {"subject": "K14 万用表、钳形电流表、绝缘电阻表的正确操作", "stem": "万用表测量电容时，应该放电后再进行测量。", "options": [{"letter": "A", "text": "不能"}, {"letter": "B", "text": "能"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "K14 万用表、钳形电流表、绝缘电阻表的正确操作", "stem": "无温室效应的制冷剂是（ ）。", "options": [{"letter": "A", "text": "R22"}, {"letter": "B", "text": "R600a"}, {"letter": "C", "text": "R34a"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "K14 万用表、钳形电流表、绝缘电阻表的正确操作", "stem": "测量设备的绝缘电阻时使用的工具是（）。", "options": [{"letter": "A", "text": "测电笔"}, {"letter": "B", "text": "万用表"}, {"letter": "C", "text": "500V 兆欧表"}, {"letter": "D", "text": "钳形电流表"}], "answer": "C", "type": "single", "source": "安维实操"}, {"subject": "K15 使用人字架吊装设备的安全操作", "stem": "空调系统新风口通常采用（）。", "options": [{"letter": "A", "text": "网格式"}, {"letter": "B", "text": "百叶式"}, {"letter": "C", "text": "盘式"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "K15 使用人字架吊装设备的安全操作", "stem": "起重机在地面，吊装作业在高处作业的条件下，必须（）设置信号传递人员，以确保司 机清晰准确的看到和听到指挥信号。", "options": [{"letter": "A", "text": "兼职"}, {"letter": "B", "text": "临时找人替代"}, {"letter": "C", "text": "专门"}], "answer": "C", "type": "single", "source": "安维实操"}, {"subject": "K15 使用人字架吊装设备的安全操作", "stem": "已知大气压力为101325Pa，某设备的表压力为810600Pa，折合其绝对压力为（）Pa。", "options": [{"letter": "A", "text": "810600"}, {"letter": "B", "text": "911925"}, {"letter": "C", "text": "709275"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "K15 使用人字架吊装设备的安全操作", "stem": "制冷系统试运转时，应检查润滑油温度，一般不超过70℃，也不低于（）℃。", "options": [{"letter": "A", "text": "5"}, {"letter": "B", "text": "10"}, {"letter": "C", "text": "15"}], "answer": "A", "type": "single", "source": "安维实操"}, {"subject": "K15 使用人字架吊装设备的安全操作", "stem": "起重吊装包括结构吊装和设备吊装，其作业属高处危险作业，作业条件多变，施工技术 也比较复杂，施工前应编制专项", "options": [{"letter": "A", "text": "施工方案"}, {"letter": "B", "text": "作业指导书"}, {"letter": "C", "text": "技术交底"}], "answer": "A", "type": "single", "source": "安维实操"}, {"subject": "K15 使用人字架吊装设备的安全操作", "stem": "使用人字架吊装设备的安全操作中，需注意哪些事项：", "options": [{"letter": "A", "text": "钢丝绳规格要能满足起吊要求，无过绣和锐角曲折"}, {"letter": "B", "text": "倒链起吊重量和起吊高度满足要求，链条、挂钩、轮轴和自锁装置正常"}, {"letter": "C", "text": "人字架张角越大越好"}, {"letter": "D", "text": "人字架张角不能过大，适中即可，捆扎结实，纤绳张好"}, {"letter": "E", "text": "统一指挥，重物和人字架倾斜度不能大，缓慢升起，防止偏斜"}], "answer": "ABDE", "type": "multiple", "source": "安维实操"}, {"subject": "K21 制冷管道的连接操作", "stem": "氨制冷系统对管道的特殊要求不可以使用铜管，但可以使用铜焊料。", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "B", "type": "judge", "source": "安维实操"}, {"subject": "K21 制冷管道的连接操作", "stem": "视频中的操作是否符合要求？ K21 第3题.mp4", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "安维实操"}, {"subject": "K21 制冷管道的连接操作", "stem": "管道连接的基本方式不包括以下哪项？", "options": [{"letter": "A", "text": "焊接"}, {"letter": "B", "text": "法兰连接"}, {"letter": "C", "text": "螺纹连接"}, {"letter": "D", "text": "卡扣连接"}], "answer": "D", "type": "single", "source": "安维实操"}, {"subject": "K22 Φ12 紫铜管喇叭口制作与连接操作", "stem": "制作喇叭口的步骤中，扩口器在对准管口后，应迅速旋转扩口。", "options": [{"letter": "A", "text": "正确"}, {"letter": "B", "text": "错误"}], "answer": "B", "type": "judge", "source": "安维实操"}, {"subject": "K22 Φ12 紫铜管喇叭口制作与连接操作", "stem": "在制作喇叭口的步骤中，是铜管漏出喇叭口的高度约为（）喇叭口的深度。", "options": [{"letter": "A", "text": "1/2"}, {"letter": "B", "text": "1/3"}, {"letter": "C", "text": "1/4"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "K22 Φ12 紫铜管喇叭口制作与连接操作", "stem": "喇叭口的制作步骤中，要先将铜管割平，然后退火，最后去除毛刺。", "options": [{"letter": "A", "text": "正确"}, {"letter": "B", "text": "错误"}], "answer": "B", "type": "judge", "source": "安维实操"}, {"subject": "K22 Φ12 紫铜管喇叭口制作与连接操作", "stem": "视频中紫铜喇叭口制作是否符合要求？", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "安维实操"}, {"subject": "K23 热力膨胀阀的正确更换操作", "stem": "在检查过膨胀阀，按工艺要求安装膨胀阀时，应先对制冷系统进行气密性试验检漏。", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "安维实操"}, {"subject": "K23 热力膨胀阀的正确更换操作", "stem": "在检修膨胀阀后，对运转中的制冷系统检查：检查膨胀阀工作是否达到根据负荷变化自 动调整制冷量的要求。", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "安维实操"}, {"subject": "K23 热力膨胀阀的正确更换操作", "stem": "从制冷系统中拆卸膨胀阀的步骤为：准备更换膨胀阀所用的仪器仪表工具设备→回收制 冷剂→按工艺要求拆卸膨胀阀。", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "安维实操"}, {"subject": "K23 热力膨胀阀的正确更换操作", "stem": "制冷系统中膨胀阀的调整步骤中错误的是", "options": [{"letter": "A", "text": "对制冷系统进行开机运转"}, {"letter": "B", "text": "调整制冷系统运行工况达到要求状态"}, {"letter": "C", "text": "逆时针调整为关小膨胀阀，顺时针调整为开大膨胀阀"}], "answer": "C", "type": "single", "source": "安维实操"}, {"subject": "K23 热力膨胀阀的正确更换操作", "stem": "以下哪项不属于在检修拆卸安装膨胀阀的步骤", "options": [{"letter": "A", "text": "将拆卸的膨胀阀按结构解体"}, {"letter": "B", "text": "检查感温气囊"}, {"letter": "C", "text": "回收制冷剂"}, {"letter": "D", "text": "充注制冷剂"}], "answer": "C", "type": "single", "source": "安维实操"}, {"subject": "K24 制冷系统的吹污操作", "stem": "在进行吹污操作时，应该先吹低压系统，后吹高压系统。", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "B", "type": "judge", "source": "安维实操"}, {"subject": "K24 制冷系统的吹污操作", "stem": "吹污的检测一般是使用（）放置于出口来检查是否干净。", "options": [{"letter": "A", "text": "砂纸"}, {"letter": "B", "text": "干净白纸"}, {"letter": "C", "text": "气管"}, {"letter": "D", "text": "手"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "K24 制冷系统的吹污操作", "stem": "在吹污操作中，进气口应设在低处，排污口设在高处，注意压力控制。", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "B", "type": "judge", "source": "安维实操"}, {"subject": "K24 制冷系统的吹污操作", "stem": "以下哪项不是吹污前需要准备的工具？", "options": [{"letter": "A", "text": "连接管"}, {"letter": "B", "text": "干燥的氮气"}, {"letter": "C", "text": "减压器"}, {"letter": "D", "text": "铜管"}], "answer": "D", "type": "single", "source": "安维实操"}, {"subject": "K24 制冷系统的吹污操作", "stem": "在进行吹污操作中，需要连接到制冷系统的，不包括以下哪项？", "options": [{"letter": "A", "text": "氮气瓶"}, {"letter": "B", "text": "加压表"}, {"letter": "C", "text": "连接软管"}, {"letter": "D", "text": "表阀"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "K25 活塞式制冷压缩机阀组部分的检修操作", "stem": "活塞式制冷压缩机阀组部分的检修操作步骤有哪些？", "options": [{"letter": "A", "text": "对压缩机拆卸下来的阀组进行清洗和检修，对损坏变形的阀片进行更换，然后用煤油 检测密封性"}, {"letter": "B", "text": "将阀组正确安装在压缩机上，调整缸垫的间隙，保证压缩机工作效率"}, {"letter": "C", "text": "在拆卸和安装时，需注意对角均衡进行松卸和拧紧螺栓"}], "answer": "ABC", "type": "multiple", "source": "安维实操"}, {"subject": "K25 活塞式制冷压缩机阀组部分的检修操作", "stem": "活塞式制冷压缩机阀组部分选择哪些工具进行检修？", "options": [{"letter": "A", "text": "梅花扳手"}, {"letter": "B", "text": "套筒扳手"}, {"letter": "C", "text": "扳手"}], "answer": "A", "type": "single", "source": "安维实操"}, {"subject": "K25 活塞式制冷压缩机阀组部分的检修操作", "stem": "耐油纸垫的制作需注意哪些问题", "options": [{"letter": "A", "text": "选用专用工具"}, {"letter": "B", "text": "选用耐油耐氟的纸垫"}, {"letter": "C", "text": "选用耐油的纸垫"}, {"letter": "D", "text": "先画大样，再凿刻出来"}], "answer": "ABD", "type": "multiple", "source": "安维实操"}, {"subject": "K31 氟利昂制冷设备的制冷系统内制冷剂回收操作", "stem": "为了降低投资和运行费用，冷水机组的冷水出水温度尽量（）。", "options": [{"letter": "A", "text": "高"}, {"letter": "B", "text": "低"}, {"letter": "C", "text": "不影响"}], "answer": "A", "type": "single", "source": "安维实操"}, {"subject": "K31 氟利昂制冷设备的制冷系统内制冷剂回收操作", "stem": "通电试运转，用钳形电流表检测启动和运行电流，噪声正常。（）", "options": [{"letter": "A", "text": "√"}, {"letter": "B", "text": "×"}], "answer": "A", "type": "judge", "source": "安维实操"}, {"subject": "K31 氟利昂制冷设备的制冷系统内制冷剂回收操作", "stem": "溴化锂吸收式制冷机是以水为制冷剂，溴化锂溶液为吸收", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "安维实操"}, {"subject": "K31 氟利昂制冷设备的制冷系统内制冷剂回收操作", "stem": "正确选择测量挡位（电压、电流、电阻、电容测量）和量程；测量前两只表笔碰头，表 针摆动并回零；测量电容前可以将电容不放电。（ ）", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "B", "type": "judge", "source": "安维实操"}, {"subject": "K32 水泵的安装操作", "stem": "水泵切断电源之后，应将开关手把打到“零位”，并闭锁。", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "安维实操"}, {"subject": "K32 水泵的安装操作", "stem": "水泵紧急停机直接拉开负荷开关就可以了。", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "B", "type": "judge", "source": "安维实操"}, {"subject": "K32 水泵的安装操作", "stem": "吸水井水面深度指示器正常工作，并在正常范围内，吸水井积泥面距龙头底面距离不小 于0.5 米。", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "安维实操"}, {"subject": "K32 水泵的安装操作", "stem": "启动水泵后，测量电流、轴承温度和噪音，试运转（）。", "options": [{"letter": "A", "text": "半小时"}, {"letter": "B", "text": "1 小时"}, {"letter": "C", "text": "2 小时"}, {"letter": "D", "text": "4 小时"}], "answer": "C", "type": "single", "source": "安维实操"}, {"subject": "K32 水泵的安装操作", "stem": "水泵安装时要找水平，保证联轴器同轴度，安装要牢固。", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "安维实操"}, {"subject": "K32 水泵的安装操作", "stem": "水泵的基础与基础间应（）。", "options": [{"letter": "A", "text": "直接连接"}, {"letter": "B", "text": "设置隔震垫"}, {"letter": "C", "text": "设置减震器"}], "answer": "BC", "type": "multiple", "source": "安维实操"}, {"subject": "K33 三通修理表阀正确使用", "stem": "多用于大中型制冷设备的冷凝器是（ ）。", "options": [{"letter": "A", "text": "风冷冷凝器"}, {"letter": "B", "text": "水冷式冷凝器"}, {"letter": "C", "text": "蒸发式冷凝器"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "K33 三通修理表阀正确使用", "stem": "压力容器安全阀应当铅直安装在与压力容器相连的管道上（ ）。", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "B", "type": "judge", "source": "安维实操"}, {"subject": "K33 三通修理表阀正确使用", "stem": "发生器内溴化锂稀溶液被加热产生冷剂蒸汽后变为浓溶液，这一浓度变化范围是溴化锂 制冷机运转的经济性指标，称作（ ）。", "options": [{"letter": "A", "text": "放气范围"}, {"letter": "B", "text": "发生效率"}, {"letter": "C", "text": "蒸发范围"}], "answer": "A", "type": "single", "source": "安维实操"}, {"subject": "K33 三通修理表阀正确使用", "stem": "电动三通阀的工作原理：以空调系统的新风机组冬、夏季温度控制为例（ ）。", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "安维实操"}, {"subject": "K33 三通修理表阀正确使用", "stem": "溴化锂浓溶液浓度与稀溶液浓度之差，通常称为（ ）。", "options": [{"letter": "A", "text": "浓缩比"}, {"letter": "B", "text": "浓缩率"}, {"letter": "C", "text": "放气范围"}], "answer": "C", "type": "single", "source": "安维实操"}, {"subject": "K34 空调和制冷系统中的管材认识", "stem": "制冷空调机房的门应该（ ）。", "options": [{"letter": "A", "text": "向内开启"}, {"letter": "B", "text": "向外开启"}, {"letter": "C", "text": "视环境而定"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "K34 空调和制冷系统中的管材认识", "stem": "与氨制冷剂不能直接接触的物质是（ ）。", "options": [{"letter": "A", "text": "铜"}, {"letter": "B", "text": "钢铁"}, {"letter": "C", "text": "石棉"}], "answer": "A", "type": "single", "source": "安维实操"}, {"subject": "K34 空调和制冷系统中的管材认识", "stem": "当制冷剂含有水分时，会出现（ ）现象。", "options": [{"letter": "A", "text": "脏堵"}, {"letter": "B", "text": "冰堵"}, {"letter": "C", "text": "油堵"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "K34 空调和制冷系统中的管材认识", "stem": "制冷空调的运行记录一般保留年限是（ ）年以上。", "options": [{"letter": "A", "text": "1"}, {"letter": "B", "text": "3"}, {"letter": "C", "text": "5"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "K34 空调和制冷系统中的管材认识", "stem": "氨制冷系统安装时，要保证冷凝器与储液器的高度差应不少于（ ）m。", "options": [{"letter": "A", "text": "2"}, {"letter": "B", "text": "3"}, {"letter": "C", "text": "4"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "K35 管道切割操作", "stem": "管道中的工质（气体或液体）流速越高，则越容易产生（）。", "options": [{"letter": "A", "text": "温度上升"}, {"letter": "B", "text": "静电积聚"}, {"letter": "C", "text": "压力增加"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "K35 管道切割操作", "stem": "空调水系统在酸洗过程中需加入缓蚀剂。", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "安维实操"}, {"subject": "K35 管道切割操作", "stem": "在管道内充有氟利昂制冷剂情况下，也可以进行焊接。", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "B", "type": "judge", "source": "安维实操"}, {"subject": "K35 管道切割操作", "stem": "空调中通风机的风压包括动压和静压。", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "安维实操"}, {"subject": "K35 管道切割操作", "stem": "氨制冷管道系统进行防腐处理时，如果没有设计规定，一般应采用防锈漆打底，调和漆 罩面底施工工艺。", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "安维实操"}, {"subject": "K41 沙轮磨削的安全操作", "stem": "常用金刚砂轮磨削（ ）。 A.40CR", "options": [{"letter": "B", "text": "硬质合金"}, {"letter": "C", "text": "45"}, {"letter": "D", "text": "Q235"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "K41 沙轮磨削的安全操作", "stem": "不准使用没有防护罩的砂轮机，使用砂轮机时，应戴好防护眼镜，人应站在砂轮的（）", "options": [{"letter": "A", "text": "正面"}, {"letter": "B", "text": "侧面"}, {"letter": "C", "text": "背面"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "K41 沙轮磨削的安全操作", "stem": "使用砂轮时绝不可超过砂轮上所标示之最（ ）使用周速度使用。", "options": [{"letter": "A", "text": "高"}, {"letter": "B", "text": "低"}], "answer": "A", "type": "single", "source": "安维实操"}, {"subject": "K41 沙轮磨削的安全操作", "stem": "图片中的工作人员正在操作什么？", "options": [{"letter": "A", "text": "敲打砂轮来庆贺工作顺利"}, {"letter": "B", "text": "安装前先轻敲砂轮作音响检查，已确认砂轮是否有裂损"}, {"letter": "C", "text": "随着音乐在敲打砂轮伴奏"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "K41 沙轮磨削的安全操作", "stem": "磨削小直径孔时，砂轮的速度应该（ ）。", "options": [{"letter": "A", "text": "高"}, {"letter": "B", "text": "中等"}, {"letter": "C", "text": "低"}, {"letter": "D", "text": "可高可低"}], "answer": "A", "type": "single", "source": "安维实操"}, {"subject": "K41 沙轮磨削的安全操作", "stem": "砂轮圆周速度很高，外圆磨削和平面磨削时其转速一般在（ ）m/s 左右。", "options": [{"letter": "A", "text": "10～15"}, {"letter": "B", "text": "20～25"}, {"letter": "C", "text": "30～35"}, {"letter": "D", "text": "40～45"}], "answer": "C", "type": "single", "source": "安维实操"}, {"subject": "K41 沙轮磨削的安全操作", "stem": "夹头主要起（ ）作用。", "options": [{"letter": "A", "text": "夹紧"}, {"letter": "B", "text": "定位"}, {"letter": "C", "text": "传动"}], "answer": "C", "type": "single", "source": "安维实操"}, {"subject": "K41 沙轮磨削的安全操作", "stem": "在过盈配合中，表面越粗糙，实际过盈量就（ ）。", "options": [{"letter": "A", "text": "无法确定"}, {"letter": "B", "text": "不变"}, {"letter": "C", "text": "增大"}, {"letter": "D", "text": "减少"}], "answer": "D", "type": "single", "source": "安维实操"}, {"subject": "K42 制冷压缩机零部件清洗的安全操作", "stem": "根据降低气流速度和改变气流方向的分油原理，使高压蒸汽中的油粒在重力作用下得以 分离。一般气流速度在1m/s 以下，就可将蒸汽中所含直径在（ ）mm 以上的油粒分离出 来。", "options": [{"letter": "A", "text": "0.1"}, {"letter": "B", "text": "0.2"}, {"letter": "C", "text": "0.3"}, {"letter": "D", "text": "0.4"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "K42 制冷压缩机零部件清洗的安全操作", "stem": "碱洗常用浓度（ ）的氢氧化钠溶液，加热到70℃～90℃进行清洗，使可皂化的油溶于 水，再用热水或冷水冲洗，即可去油脂。", "options": [{"letter": "A", "text": "10%"}, {"letter": "B", "text": "20%"}, {"letter": "C", "text": "30%"}, {"letter": "D", "text": "40%"}], "answer": "A", "type": "single", "source": "安维实操"}, {"subject": "K42 制冷压缩机零部件清洗的安全操作", "stem": "由于一般溶解型清洗剂会存在高温下分解成酸性的特点，因此在设计时，针对蒸汽浴洗 槽及蒸馏回收槽采用直接加热方式。", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "B", "type": "judge", "source": "安维实操"}, {"subject": "K42 制冷压缩机零部件清洗的安全操作", "stem": "精密件用酒精清洗，橡胶件用汽油清洗。", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "B", "type": "judge", "source": "安维实操"}, {"subject": "K42 制冷压缩机零部件清洗的安全操作", "stem": "通常沸点高的清洗剂，冷排管层数越多，热交换的量更大。", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "B", "type": "judge", "source": "安维实操"}, {"subject": "K42 制冷压缩机零部件清洗的安全操作", "stem": "制冷压缩机零部件清洗前，需要准备哪些工具：", "options": [{"letter": "A", "text": "清洗剂与绸布"}, {"letter": "B", "text": "无盖容器"}, {"letter": "C", "text": "冷冻油"}], "answer": "ABC", "type": "multiple", "source": "安维实操"}, {"subject": "K43 空调水系统的压力试验操作", "stem": "中央空调水系统压力试验用压力表的精度要求为2.5 级以上。", "options": [{"letter": "A", "text": "正确"}, {"letter": "B", "text": "错误"}], "answer": "B", "type": "judge", "source": "安维实操"}, {"subject": "K43 空调水系统的压力试验操作", "stem": "中央空调水系统水压试验中的严密性试验压力为（）MPa。", "options": [{"letter": "A", "text": "0.3"}, {"letter": "B", "text": "0.6"}, {"letter": "C", "text": "0.9"}, {"letter": "D", "text": "1.2"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "K43 空调水系统的压力试验操作", "stem": "中央空调水系统水压试验中的强度试验压力为（）MPa。", "options": [{"letter": "A", "text": "0.3"}, {"letter": "B", "text": "0.6"}, {"letter": "C", "text": "0.9"}, {"letter": "D", "text": "1.2"}], "answer": "C", "type": "single", "source": "安维实操"}, {"subject": "K43 空调水系统的压力试验操作", "stem": "离心式制冷机组压力试验后可直接进行真空实验。", "options": [{"letter": "A", "text": "正确"}, {"letter": "B", "text": "错误"}], "answer": "B", "type": "judge", "source": "安维实操"}, {"subject": "K43 空调水系统的压力试验操作", "stem": "离心式制冷机组安装后应进行气密性试验。", "options": [{"letter": "A", "text": "正确"}, {"letter": "B", "text": "正确"}], "answer": "A", "type": "single", "source": "安维实操"}, {"subject": "K43 空调水系统的压力试验操作", "stem": "中央空调开式循环冷却水出现结垢和污物沉积会造成热交换效率降低，管道堵塞，水循 环量减小，动力消耗增大。", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "安维实操"}, {"subject": "K43 空调水系统的压力试验操作", "stem": "冷却水泵出现故障，导致冷却水水流不足或中断会导致冷凝压力超高。", "options": [{"letter": "A", "text": "正确"}, {"letter": "B", "text": "错误"}], "answer": "B", "type": "judge", "source": "安维实操"}, {"subject": "K43 空调水系统的压力试验操作", "stem": "空调水系统的压力试验步骤有哪些？", "options": [{"letter": "A", "text": "先用压缩空气吹出杂物，清水冲洗管道"}, {"letter": "B", "text": "打开高处放气阀，注水，水满后关闭排气阀和进气阀"}, {"letter": "C", "text": "泵加压，分两三次开高到试验压力。0.9MPa 保持30min，压力降不大于0.02MPa"}, {"letter": "D", "text": "降至0.6 MPa，保压2 小时，全面检查各焊缝处无渗漏为合格"}], "answer": "ABCD", "type": "multiple", "source": "安维实操"}, {"subject": "K43 空调水系统的压力试验操作", "stem": "压力试验按国家有关标准规定，一般为工作压力1.0 倍", "options": [{"letter": "A", "text": "正确"}, {"letter": "B", "text": "错误"}], "answer": "B", "type": "judge", "source": "安维实操"}, {"subject": "K43 空调水系统的压力试验操作", "stem": "使用手动加压泵与试压系统连接，压力精度不低于1.5 级。", "options": [{"letter": "A", "text": "正确"}, {"letter": "B", "text": "错误"}], "answer": "ADAABACADABABABBACBADBA", "type": "multiple", "source": "安维实操"}, {"subject": "K44 制冷设备充注制冷剂的操作", "stem": "冰箱加氟调试过程一般要（ ）个小时左右才能完成（环境温度不同，降温时间有长短）。", "options": [{"letter": "A", "text": "1"}, {"letter": "B", "text": "2"}, {"letter": "C", "text": "3"}, {"letter": "D", "text": "4"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "K44 制冷设备充注制冷剂的操作", "stem": "不同制冷剂混合使用是否可以。（）", "options": [{"letter": "A", "text": "是"}, {"letter": "B", "text": "否"}], "answer": "B", "type": "judge", "source": "安维实操"}, {"subject": "K44 制冷设备充注制冷剂的操作", "stem": "当温度超过（ ）℃时，两次回收工作要间隔10 分钟。", "options": [{"letter": "A", "text": "47"}, {"letter": "B", "text": "48"}, {"letter": "C", "text": "49"}, {"letter": "D", "text": "50"}], "answer": "C", "type": "single", "source": "安维实操"}, {"subject": "K44 制冷设备充注制冷剂的操作", "stem": "为减少火灾危险，并（应）避免使用过长的电源线，如需使用长导线，导线规格应不小 于（ ）AWG。", "options": [{"letter": "A", "text": "14"}, {"letter": "B", "text": "16"}, {"letter": "C", "text": "18"}, {"letter": "D", "text": "20"}], "answer": "AA", "type": "multiple", "source": "安维实操"}, {"subject": "K44 制冷设备充注制冷剂的操作", "stem": "冰箱制冷剂加注量不大，一般不超过（ ）千克。", "options": [{"letter": "A", "text": "0.1"}, {"letter": "B", "text": "0.2"}, {"letter": "C", "text": "0.3"}, {"letter": "D", "text": "0.4"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "K44 制冷设备充注制冷剂的操作", "stem": "有哪些方法可以使得充注制冷剂气体或液体时定量？", "options": [{"letter": "A", "text": "称重法"}, {"letter": "B", "text": "体积法"}, {"letter": "C", "text": "压力判断法"}, {"letter": "D", "text": "重量法"}], "answer": "ABC", "type": "multiple", "source": "安维实操"}, {"subject": "K44 制冷设备充注制冷剂的操作", "stem": "充注设备的正确连接操作：", "options": [{"letter": "A", "text": "正确连接三通修理表阀，对系统进行复试双向抽真空，接通电磁阀"}, {"letter": "B", "text": "向低压侧充注制冷剂液体，向高压侧充注制冷剂气体"}, {"letter": "C", "text": "向低压侧充注制冷剂气体，向高压侧充注制冷剂液体"}, {"letter": "D", "text": "调试制冷设备运行工况，检查温度、压力、压缩机运行电流"}], "answer": "ACD", "type": "multiple", "source": "安维实操"}, {"subject": "K44 制冷设备充注制冷剂的操作", "stem": "制冷设备充注制冷剂前应做哪些检查？", "options": [{"letter": "A", "text": "截止阀、部件、管路"}, {"letter": "B", "text": "系统是否顺畅"}, {"letter": "C", "text": "制冷设备是否密封"}, {"letter": "D", "text": "准备真空泵、检修表阀、制冷剂"}], "answer": "ABCD", "type": "multiple", "source": "安维实操"}, {"subject": "其他综合题", "stem": "“一坡三挡”的阻车器所用钢板厚度不得小于（ ）mm。（注：矿山车装置）", "options": [{"letter": "A", "text": "8"}, {"letter": "B", "text": "10"}, {"letter": "C", "text": "14"}, {"letter": "D", "text": "16"}], "answer": "C", "type": "single", "source": "安维实操"}, {"subject": "其他综合题", "stem": "溴化锂制冷机短时间停电，再次启动机组时，首先启动的设备应是（ ）。", "options": [{"letter": "A", "text": "真空泵"}, {"letter": "B", "text": "冷冻水泵"}, {"letter": "C", "text": "冷水泵和冷却水泵"}], "answer": "C", "type": "single", "source": "安维实操"}, {"subject": "其他综合题", "stem": "为减少溴化锂溶液表面张力，对溴化锂机要定时添加的活性剂为（ ）。", "options": [{"letter": "A", "text": "松香水"}, {"letter": "B", "text": "异辛醇"}, {"letter": "C", "text": "煤油"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "其他综合题", "stem": "冷冻吨是指将1 吨0℃水冷冻为0℃的冰所转移出的热量。（注：少24 小时条件）", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "安维实操"}, {"subject": "其他综合题", "stem": "定期检查和计划维修，使制冷设备可靠性增加，基本上防止（ ）的发生。", "options": [{"letter": "A", "text": "一般事故"}, {"letter": "B", "text": "常见事故"}, {"letter": "C", "text": "突然事故"}], "answer": "C", "type": "single", "source": "安维实操"}, {"subject": "其他综合题", "stem": "洁净室事故排风系统的换气次数应为（ ）。", "options": [{"letter": "A", "text": "无穷大"}, {"letter": "B", "text": "15-20 次/h"}, {"letter": "C", "text": "5-10 次/h"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "其他综合题", "stem": "煤尘爆炸时氧气的浓度不低于（ ）。", "options": [{"letter": "A", "text": "5%"}, {"letter": "B", "text": "12%"}, {"letter": "C", "text": "16%"}, {"letter": "D", "text": "18%"}], "answer": "D", "type": "single", "source": "安维实操"}, {"subject": "其他综合题", "stem": "请选择制冷工具：", "options": [{"letter": "A", "text": "回收瓶"}, {"letter": "B", "text": "冷媒回收机"}, {"letter": "C", "text": "温度计"}, {"letter": "D", "text": "压力表阀"}, {"letter": "E", "text": "制冷专用工具   F:流量计    G:液位计"}], "answer": "ABCDE", "type": "multiple", "source": "安维实操"}, {"subject": "其他综合题", "stem": "制冷设备制冷系统内回收制冷剂的操作步骤", "options": [{"letter": "A", "text": "制冷设备制冷系统的检查＞启动制冷设备制冷系统达到低压表压力为0MPa 停车＞ 关闭制冷设备高压供液阀＞关闭制冷设备低压、高压阀门"}, {"letter": "B", "text": "启动制冷设备制冷系统达到低压表压力为0MPa 停车＞制冷设备制冷系统的检查＞ 关闭制冷设备高压供液阀"}, {"letter": "C", "text": "制冷设备制冷系统的检查＞关闭制冷设备低压、高压阀门回收制冷剂＞启动制冷设 备制冷系统达到低压表压力为0MPa 停车"}, {"letter": "D", "text": "制冷设备制冷系统的检查＞关闭制冷设备高压供液阀＞启动制冷设备制冷系统达 到低压表压力为0MPa 停车＞关闭制冷设备低压、高压阀门"}], "answer": "D", "type": "single", "source": "安维实操"}, {"subject": "其他综合题", "stem": "恢复制冷系统内的制冷剂操作方法", "options": [{"letter": "A", "text": "打开制冷设备低压阀、高压阀、供液阀＞灌注原系统制冷剂＞启动制冷设备制冷系 统，调整工况＞对制冷系统恢复和检漏"}, {"letter": "B", "text": "打开制冷设备低压阀、高压阀、供液阀＞启动制冷设备制冷系统，调整工况＞灌注 原系统制冷剂＞对制冷系统恢复和检漏"}, {"letter": "C", "text": "启动制冷设备制冷系统，调整工况＞打开制冷设备低压阀、高压阀、供液阀＞灌注 原系统制冷剂＞对制冷系统恢复和检漏"}, {"letter": "D", "text": "启动制冷设备制冷系统，调整工况＞灌注原系统制冷剂＞打开制冷设备低压阀、高 压阀、供液阀＞对制冷系统恢复和检漏"}], "answer": "A", "type": "single", "source": "安维实操"}, {"subject": "其他综合题", "stem": "对制冷系统恢复和检漏的操作方法", "options": [{"letter": "A", "text": "肥皂水检漏"}, {"letter": "B", "text": "电子检漏仪"}, {"letter": "C", "text": "荧光检漏"}, {"letter": "D", "text": "氨敏纸检漏"}], "answer": "AB", "type": "multiple", "source": "安维实操"}, {"subject": "其他综合题", "stem": "氟压缩机应使用（ ）清洗零部件和油箱。", "options": [{"letter": "A", "text": "汽油"}, {"letter": "B", "text": "煤油"}, {"letter": "C", "text": "汽油"}, {"letter": "D", "text": "乙醇"}], "answer": "AAC", "type": "multiple", "source": "安维实操"}, {"subject": "其他综合题", "stem": "氨压缩机以（ ）作清洗剂。", "options": [{"letter": "A", "text": "肥皂液"}, {"letter": "B", "text": "煤油"}, {"letter": "C", "text": "汽油"}, {"letter": "D", "text": "乙醇"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "其他综合题", "stem": "管道切割时应注意（ ），防止碾压连接电缆线。", "options": [{"letter": "A", "text": "不可用力过猛"}, {"letter": "B", "text": "速度适当"}, {"letter": "C", "text": "工件夹紧"}, {"letter": "D", "text": "速度要快"}], "answer": "A", "type": "single", "source": "安维实操"}, {"subject": "其他综合题", "stem": "管道切割时应注意（ ）。", "options": [{"letter": "A", "text": "不可用力过猛"}, {"letter": "B", "text": "速度适当"}, {"letter": "C", "text": "工件夹紧"}, {"letter": "D", "text": "速度要快"}], "answer": "ABC", "type": "multiple", "source": "安维实操"}, {"subject": "其他综合题", "stem": "热力膨胀阀更换需要哪些操作步骤？", "options": [{"letter": "A", "text": "从制冷系统中拆卸膨胀阀"}, {"letter": "B", "text": "检修拆卸的膨胀阀，解体拆下来的膨胀阀，并用柴油清洗阀体，阀芯等部件"}, {"letter": "C", "text": "检查温感气囊，随后将清洗检修后的膨胀阀按结构进行正确组装"}, {"letter": "D", "text": "按工艺要求重新将膨胀阀安装回制冷系统，并对制冷系统进行气密性检测"}, {"letter": "E", "text": "对制冷系统进行抽真空后，即可恢复制冷系统"}], "answer": "ABCDE", "type": "multiple", "source": "安维实操"}, {"subject": "其他综合题", "stem": "（ ）用于紫铜管和小口径水管。", "options": [{"letter": "A", "text": "锯割"}, {"letter": "B", "text": "刀割"}, {"letter": "C", "text": "磨切"}, {"letter": "D", "text": "氧-乙炔焰"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "其他综合题", "stem": "管道切割的方法有（ ）。", "options": [{"letter": "A", "text": "锯割、刀割"}, {"letter": "B", "text": "磨切"}, {"letter": "C", "text": "氧-乙炔焰"}, {"letter": "D", "text": "水切割"}], "answer": "ABC", "type": "multiple", "source": "安维实操"}, {"subject": "其他综合题", "stem": "无缝钢管采用（ ）_连接。", "options": [{"letter": "A", "text": "螺纹压接和钎焊焊接"}, {"letter": "B", "text": "焊接或法兰连接"}, {"letter": "C", "text": "螺纹连接、焊接或法兰连接"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "其他综合题", "stem": "（ ）用于压力不高的水系统。", "options": [{"letter": "A", "text": "紫铜管"}, {"letter": "B", "text": "无缝钢管"}, {"letter": "C", "text": "焊管"}], "answer": "C", "type": "single", "source": "安维实操"}, {"subject": "其他综合题", "stem": "用于氨系统和直径较大的氟系统及水系统。", "options": [{"letter": "A", "text": "紫铜管"}, {"letter": "B", "text": "无缝钢管"}, {"letter": "C", "text": "焊管"}], "answer": "B", "type": "single", "source": "安维实操"}, {"subject": "其他综合题", "stem": "紫铜管用于 ；外壁Х壁厚表示；用螺纹压接和钎焊焊接。", "options": [{"letter": "A", "text": "氟利昂系统"}, {"letter": "B", "text": "氨系统"}, {"letter": "C", "text": "水系统"}], "answer": "A", "type": "single", "source": "安维实操"}, {"subject": "其他综合题", "stem": "（ ）用于钢管。", "options": [{"letter": "A", "text": "锯割"}, {"letter": "B", "text": "刀割"}, {"letter": "C", "text": "磨切"}, {"letter": "D", "text": "氧-乙炔焰"}], "answer": "AABCD", "type": "multiple", "source": "安维实操"}, {"subject": "其他综合题", "stem": "（ ）用于较大直径钢管。", "options": [{"letter": "A", "text": "锯割"}, {"letter": "B", "text": "刀割"}, {"letter": "C", "text": "磨切"}, {"letter": "D", "text": "氧-乙炔焰"}], "answer": "CCD", "type": "multiple", "source": "安维实操"}, {"subject": "K11 万用表、钳型电流表、绝缘电阻表的正确操作", "stem": "万用表量程旋转开关应遵循先（ ）后（），量程大小选用原则", "options": [{"letter": "A", "text": "量程，档位"}, {"letter": "B", "text": "电压，电流"}, {"letter": "C", "text": "选档位、量程"}, {"letter": "D", "text": "大，小"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K11 万用表、钳型电流表、绝缘电阻表的正确操作", "stem": "下列关于兆欧表的使用不正确的是（ ）", "options": [{"letter": "A", "text": "被测物表面要清洁，减少接触电阻"}, {"letter": "B", "text": "测量前，应检查兆欧表是坏良好"}, {"letter": "C", "text": "兆欧表使用时应放在平衡、牢固的地方，且离大的外电流导体和外磁场"}, {"letter": "D", "text": "可带电测量"}], "answer": "D", "type": "single", "source": "运行实操"}, {"subject": "K11 万用表、钳型电流表、绝缘电阻表的正确操作", "stem": "电源电动势的大小由电源本身性质决定，与外电路无关。（ ）", "options": [{"letter": "A", "text": "是"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "运行实操"}, {"subject": "K11 万用表、钳型电流表、绝缘电阻表的正确操作", "stem": "使用钳形电流表测量制冷设备的交流电流，请选用（ ）", "options": [{"letter": "A", "text": "直流电流档"}, {"letter": "B", "text": "交流电流档"}, {"letter": "C", "text": "直流电压档"}, {"letter": "D", "text": "交流电压档"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K11 万用表、钳型电流表、绝缘电阻表的正确操作", "stem": "兆欧表又叫摇表，是用来测量（ ）直读式仪表", "options": [{"letter": "A", "text": "接地电阻"}, {"letter": "B", "text": "交流电流"}, {"letter": "C", "text": "高电阻"}, {"letter": "D", "text": "低电阻"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K11 万用表、钳型电流表、绝缘电阻表的正确操作", "stem": "钳形电流表使用时注意事项，以下选项中错误的是（ ）", "options": [{"letter": "A", "text": "严禁使用低压钳形电流表测量高压回路的电流"}, {"letter": "B", "text": "当电缆有一项接地，严禁测量"}, {"letter": "C", "text": "钳形电流表测量结束后，应把开关拨至最大量程"}, {"letter": "D", "text": "观察表计时，为了观察清楚，应尽量靠近"}], "answer": "D", "type": "single", "source": "运行实操"}, {"subject": "K11 万用表、钳型电流表、绝缘电阻表的正确操作", "stem": "万用表使用完毕业，应将转换开关置于（ ）的最大档", "options": [{"letter": "A", "text": "交流电流"}, {"letter": "B", "text": "交流电压"}, {"letter": "C", "text": "随便都可以"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K11 万用表、钳型电流表、绝缘电阻表的正确操作", "stem": "充注制冷剂后压缩机运转不停，可能是什么原因（ ）", "options": [{"letter": "A", "text": "压缩机损坏"}, {"letter": "B", "text": "电路故障"}, {"letter": "C", "text": "制冷剂不合格"}, {"letter": "D", "text": "制冷剂充灌过多"}], "answer": "D", "type": "single", "source": "运行实操"}, {"subject": "K11 万用表、钳型电流表、绝缘电阻表的正确操作", "stem": "下图是哪种温度计（ ）", "options": [{"letter": "A", "text": "干湿球温度计"}, {"letter": "B", "text": "手持红外测温仪"}, {"letter": "C", "text": "半导体点温计"}, {"letter": "D", "text": "压力表式温度计"}], "answer": "A", "type": "single", "source": "运行实操"}, {"subject": "K11 万用表、钳型电流表、绝缘电阻表的正确操作", "stem": "万用表是一种多用途的电工仪表，可以用来测量电压、电流、电阻、电感和电容等（ ）", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "运行实操"}, {"subject": "K11 万用表、钳型电流表、绝缘电阻表的正确操作", "stem": "万用表在使用时，必须（ ）以免造成误差，同时，还要注意到避免外界磁场对万用表的影响", "options": [{"letter": "A", "text": "水平放置"}, {"letter": "B", "text": "垂直放置"}, {"letter": "C", "text": "倾斜放置"}], "answer": "A", "type": "single", "source": "运行实操"}, {"subject": "K12 制冷系统中温度仪表的测量操作", "stem": "在用热电偶进行温度测量时，若已知冷端温度，被测温度可以按如下步骤计算得到，首先根据测得 的热电势查表获得冷热端的温差，然后加上冷端温度得到热端温度。（ ）", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "B", "type": "judge", "source": "运行实操"}, {"subject": "K12 制冷系统中温度仪表的测量操作", "stem": "半导体点温计使用注意事项（ ）", "options": [{"letter": "A", "text": "在测量和放置过程中应放置与较硬物体发生碰撞"}, {"letter": "B", "text": "使用后应立即妥善放置，使用防护套套住外露感温元件"}, {"letter": "C", "text": "当调整满刻度而电压不够时，应调换4号电池"}, {"letter": "D", "text": "半导体点温计可以在有腐蚀性气体及潮湿环境下使用"}], "answer": "D", "type": "single", "source": "运行实操"}, {"subject": "K12 制冷系统中温度仪表的测量操作", "stem": "在以下关于干湿球温度计的叙述中，下列哪条叙述是不正确的（ ）", "options": [{"letter": "A", "text": "在理想情况下，相对湿度越高，则干湿球温差越小"}, {"letter": "B", "text": "在低于冰点以下的温度使用时，误差很大，约为18%"}, {"letter": "C", "text": "只要测出空气的干湿球温度，就可以在h-d图中查出相应湿度"}, {"letter": "D", "text": "在测定相对湿度时，空气流速低于2.5m/s时，流速对测量的数值影响较小"}], "answer": "D", "type": "single", "source": "运行实操"}, {"subject": "K12 制冷系统中温度仪表的测量操作", "stem": "安装湿度计时，以下操作错误的是（ ）", "options": [{"letter": "A", "text": "选择好测量点"}, {"letter": "B", "text": "湿度计感温部分不需要被测点贴实，简单接触即可"}, {"letter": "C", "text": "红外线温度计应瞄准被测点"}, {"letter": "D", "text": "准确读取测出温度"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K12 制冷系统中温度仪表的测量操作", "stem": "接触式温度测量会对被测物体的温度场产生影响，从而使测量结果高于或低于实际温度（ ）", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "运行实操"}, {"subject": "K12 制冷系统中温度仪表的测量操作", "stem": "一般情况下，油分离器安装在冷凝器与过虑器之间地输液管道上（ ）", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "B", "type": "judge", "source": "运行实操"}, {"subject": "K12 制冷系统中温度仪表的测量操作", "stem": "常用的温标不包括（ ）", "options": [{"letter": "A", "text": "华氏温标"}, {"letter": "B", "text": "摄氏温标"}, {"letter": "C", "text": "绝对温标"}, {"letter": "D", "text": "相对温标"}], "answer": "D", "type": "single", "source": "运行实操"}, {"subject": "K12 制冷系统中温度仪表的测量操作", "stem": "仪表最大允许误差指的是（ ）", "options": [{"letter": "A", "text": "最大绝对误差"}, {"letter": "B", "text": "最大相对误差"}, {"letter": "C", "text": "最大百分相对误差"}, {"letter": "D", "text": "百分相对误差"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K12 制冷系统中温度仪表的测量操作", "stem": "压力表式温度计的工作物质不包括（ ）", "options": [{"letter": "A", "text": "液体"}, {"letter": "B", "text": "固体"}, {"letter": "C", "text": "气体"}, {"letter": "D", "text": "蒸汽"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K12 制冷系统中温度仪表的测量操作", "stem": "半导体点温计的使用方法不正确的是（ ）", "options": [{"letter": "A", "text": "使用前检查点温计是否完好"}, {"letter": "B", "text": "测量时应调整零位"}, {"letter": "C", "text": "应调整满刻度"}, {"letter": "D", "text": "测量完毕后，仪表无需置零"}], "answer": "D", "type": "single", "source": "运行实操"}, {"subject": "K12 制冷系统中温度仪表的测量操作", "stem": "安装温度测量仪表时，下列哪种做法不正确（ ）", "options": [{"letter": "A", "text": "在管道中安装时，测量端应处于管道中流速最大的地方"}, {"letter": "B", "text": "测量用火焰加热的介质温度时，感温元件要避开火焰"}, {"letter": "C", "text": "测量负压设备内部的温度时，要将感温元件的插入孔用耐热材料密封"}, {"letter": "D", "text": "测量流动介质温度时，感温元件应顺流插入"}], "answer": "D", "type": "single", "source": "运行实操"}, {"subject": "K13 活塞式冷水机组停机的操作", "stem": "活塞式冷水机手动停机步骤，以下选项中错误的是（ ）", "options": [{"letter": "A", "text": "强制冷系统降压，即将选择开关转到“卸载”位置"}, {"letter": "B", "text": "制冷压缩机自动卸载到设定的低压切断点时停机"}, {"letter": "C", "text": "对季节性停机，应将制冷剂贮藏在冷凝器中，且关闭压缩机吸气阀，排气阀，拧紧密封盖"}, {"letter": "D", "text": "关闭蒸发器壳体底部的排水阀"}], "answer": "D", "type": "single", "source": "运行实操"}, {"subject": "K13 活塞式冷水机组停机的操作", "stem": "离心式冷水机组比活塞式冷水机组单位制冷量重量大（ ）", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "B", "type": "judge", "source": "运行实操"}, {"subject": "K13 活塞式冷水机组停机的操作", "stem": "活塞式冷水机组节假日停电时，不需要进行（ ）操作", "options": [{"letter": "A", "text": "关闭冷却水泵"}, {"letter": "B", "text": "关闭冷媒水泵"}, {"letter": "C", "text": "在醒目处挂标志牌"}, {"letter": "D", "text": "切断电源"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K13 活塞式冷水机组停机的操作", "stem": "空调上使用的活塞式冷水机组，大多采用的是制冷压缩机的（ ）种类", "options": [{"letter": "A", "text": "封闭式"}, {"letter": "B", "text": "开式"}, {"letter": "C", "text": "半封闭式"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K13 活塞式冷水机组停机的操作", "stem": "活塞式冷水机组季节性停机的安全操作，不需要进行（ ）操作", "options": [{"letter": "A", "text": "关闭冷却水泵"}, {"letter": "B", "text": "关闭冷媒水泵"}, {"letter": "C", "text": "立即将车间所有电动机电源切断"}, {"letter": "D", "text": "切断电源"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K13 活塞式冷水机组停机的操作", "stem": "活塞式冷水机遇到冷却水，冷媒水突然停水时，不正确的操作是（ ）", "options": [{"letter": "A", "text": "可自主拆卸，检查情况"}, {"letter": "B", "text": "立即切断电源"}, {"letter": "C", "text": "关闭冷却水泵和冷媒水泵"}, {"letter": "D", "text": "立即将车间所有电动机电源切断"}], "answer": "A", "type": "single", "source": "运行实操"}, {"subject": "K13 活塞式冷水机组停机的操作", "stem": "冷水机正常停机后导叶位置（ ）", "options": [{"letter": "A", "text": "完全开启"}, {"letter": "B", "text": "完全关闭"}, {"letter": "C", "text": "部分关闭"}, {"letter": "D", "text": "不确定"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K13 活塞式冷水机组停机的操作", "stem": "活塞式冷机突然停电时，不正确的操作是（ ）", "options": [{"letter": "A", "text": "立即切断电源"}, {"letter": "B", "text": "及时拉开车间外部电源开关，切断所有电动机电源"}, {"letter": "C", "text": "及时断开电控主电源"}, {"letter": "D", "text": "静静等待来电"}], "answer": "D", "type": "single", "source": "运行实操"}, {"subject": "K13 活塞式冷水机组停机的操作", "stem": "活塞式冷水机由于故障自动停机后的操作，以下选项中错误的是（ ）", "options": [{"letter": "A", "text": "用户应立即查明原因并排队故障，然后才能重新启动支行"}, {"letter": "B", "text": "若短时间无法排队故障，则应将“通-断”开关放在“通”上"}, {"letter": "C", "text": "冷水机组停机后，一般曲轴箱内的油加热器仍然工作"}, {"letter": "D", "text": "若故障原因无法确定，应咨询相关人员处理"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K13 活塞式冷水机组停机的操作", "stem": "活塞式冷水机组有单机头和多机头之分，多机头式压缩机多采用开启式结构（ ）", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "运行实操"}, {"subject": "K13 活塞式冷水机组停机的操作", "stem": "螺杆式压缩机没有吸排气阀片，不会发生液击的危险（ ）", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "运行实操"}, {"subject": "K14 充注制冷剂后的验证操作", "stem": "为了避免发生“冰塞”现象，氟利昂制冷系统中应装有（ ）", "options": [{"letter": "A", "text": "结晶器"}, {"letter": "B", "text": "汽化器"}, {"letter": "C", "text": "干燥器"}, {"letter": "D", "text": "净化器"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K14 充注制冷剂后的验证操作", "stem": "氟利昂大量泄漏，会导致人昏迷的气体浓度是（ ）%", "options": [{"letter": "A", "text": "5"}, {"letter": "B", "text": "10"}, {"letter": "C", "text": "20"}, {"letter": "D", "text": "30"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K14 充注制冷剂后的验证操作", "stem": "氟利昂制冷剂的主要特性为（ ）", "options": [{"letter": "A", "text": "溶油性强"}, {"letter": "B", "text": "制冷快"}, {"letter": "C", "text": "经济实惠"}, {"letter": "D", "text": "无毒无气味"}], "answer": "A", "type": "single", "source": "运行实操"}, {"subject": "K14 充注制冷剂后的验证操作", "stem": "氟利昂制冷剂中，对大气层中的臭氧层起破坏作用的是（ ）原子", "options": [{"letter": "A", "text": "氯"}, {"letter": "B", "text": "氟"}, {"letter": "C", "text": "溴"}, {"letter": "D", "text": "锌"}], "answer": "A", "type": "single", "source": "运行实操"}, {"subject": "K14 充注制冷剂后的验证操作", "stem": "以下哪种不是氟利昂制冷剂大量泄露后的处理方法（ ）", "options": [{"letter": "A", "text": "开窗通风"}, {"letter": "B", "text": "请专业人士处理"}, {"letter": "C", "text": "捂住口鼻"}, {"letter": "D", "text": "不予理睬"}], "answer": "D", "type": "single", "source": "运行实操"}, {"subject": "K14 充注制冷剂后的验证操作", "stem": "制冷装置充注制冷剂不采用以下哪种方法（ ）", "options": [{"letter": "A", "text": "定量充注法"}, {"letter": "B", "text": "称重量充注法"}, {"letter": "C", "text": "压力观察充注法"}, {"letter": "D", "text": "灌量充注法"}], "answer": "D", "type": "single", "source": "运行实操"}, {"subject": "K14 充注制冷剂后的验证操作", "stem": "氟利昂制冷剂大量泄露的危害为（ ）", "options": [{"letter": "A", "text": "滋生细菌"}, {"letter": "B", "text": "破坏土质层"}, {"letter": "C", "text": "灼烧皮肤"}, {"letter": "D", "text": "气体中毒"}], "answer": "D", "type": "single", "source": "运行实操"}, {"subject": "K14 充注制冷剂后的验证操作", "stem": "在启动氟利昂压缩机之前，先对润滑油加热的目的是（ ）", "options": [{"letter": "A", "text": "提高润滑油的温度"}, {"letter": "B", "text": "使润滑油中溶入的氟利昂逸出"}, {"letter": "C", "text": "降低润滑油的黏度"}, {"letter": "D", "text": "提高润滑油的黏度"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K14 充注制冷剂后的验证操作", "stem": "湿度控制器是制冷系统的组成部件（ ）", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "B", "type": "judge", "source": "运行实操"}, {"subject": "K14 充注制冷剂后的验证操作", "stem": "以下哪种选项不是氟利昂的类别（ ）", "options": [{"letter": "A", "text": "氯氟烃类产品"}, {"letter": "B", "text": "氢氟烃类产品"}, {"letter": "C", "text": "氯烃氟产品"}, {"letter": "D", "text": "氢氯氟烃类产品"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K14 充注制冷剂后的验证操作", "stem": "冷媒充注过少会出现的问题是（ ）", "options": [{"letter": "A", "text": "制冷量正常"}, {"letter": "B", "text": "输入功率正常"}, {"letter": "D", "text": "设备寿命正常"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K14 充注制冷剂后的验证操作", "stem": "为了扩大螺杆制冷压缩机的使用范围，改善低温工况的性能，提高效率，可在系统内增设（ ）", "options": [{"letter": "A", "text": "膨胀阀"}, {"letter": "B", "text": "干燥过滤器"}, {"letter": "C", "text": "经济器"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K14 充注制冷剂后的验证操作", "stem": "观察图片，这是哪一种检查氟利昂制冷剂有无泄露的方法（ ）", "options": [{"letter": "A", "text": "直接观察法"}, {"letter": "B", "text": "电子检漏法"}, {"letter": "C", "text": "水中发泡法"}, {"letter": "D", "text": "荧光检漏法"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K14 充注制冷剂后的验证操作", "stem": "观察视频，CI代表（ ）", "options": [{"letter": "A", "text": "臭氧"}, {"letter": "B", "text": "添加剂"}, {"letter": "C", "text": "催化剂"}, {"letter": "D", "text": "挥发物"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K15 活塞冷水机组充注制冷剂操作", "stem": "代号为R717的制冷剂分子式是（ ） A、CO2", "options": [{"letter": "B", "text": "NH3"}, {"letter": "C", "text": "H2O"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K15 活塞冷水机组充注制冷剂操作", "stem": "冷水机停机后可立即将水泵停止（ ）", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "B", "type": "judge", "source": "运行实操"}, {"subject": "K15 活塞冷水机组充注制冷剂操作", "stem": "冷水机组停机后，为使机体得到冷却，冷却、冷冻水泵应继续循环一段时间（ ）", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "运行实操"}, {"subject": "K15 活塞冷水机组充注制冷剂操作", "stem": "以下哪种不是充注制冷剂前应做的准备工作（ ）", "options": [{"letter": "A", "text": "工具的准备"}, {"letter": "B", "text": "资料的准备"}, {"letter": "C", "text": "验收的准备"}, {"letter": "D", "text": "补漏、检漏"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K15 活塞冷水机组充注制冷剂操作", "stem": "冷水机组启动前应提前（ ）", "options": [{"letter": "A", "text": "8"}, {"letter": "B", "text": "24"}, {"letter": "C", "text": "12"}, {"letter": "D", "text": "10"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K15 活塞冷水机组充注制冷剂操作", "stem": "如何验证充注了制冷剂（ ）", "options": [{"letter": "A", "text": "箱门自动开启"}, {"letter": "B", "text": "蒸发器结霜正常"}, {"letter": "C", "text": "温度升高"}, {"letter": "D", "text": "压力升高"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K15 活塞冷水机组充注制冷剂操作", "stem": "以下哪种不是充注制冷剂的检漏项（ ）", "options": [{"letter": "A", "text": "压力检查"}, {"letter": "B", "text": "制冷系统气密性检查"}, {"letter": "C", "text": "真空检查"}, {"letter": "D", "text": "吹污检查"}], "answer": "A", "type": "single", "source": "运行实操"}, {"subject": "K15 活塞冷水机组充注制冷剂操作", "stem": "制冷系统中，用于储存液体制冷剂的容器叫做（ ）", "options": [{"letter": "A", "text": "蒸发器"}, {"letter": "B", "text": "冷凝器"}, {"letter": "C", "text": "储液器"}, {"letter": "D", "text": "锅炉"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K15 活塞冷水机组充注制冷剂操作", "stem": "冷水机组停机后，严禁断开总电源开关（ ）", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "运行实操"}, {"subject": "K15 活塞冷水机组充注制冷剂操作", "stem": "观察视频，选择视频中为何种检漏方法（ ）", "options": [{"letter": "A", "text": "卤素检漏仪检漏"}, {"letter": "B", "text": "保压检漏"}, {"letter": "C", "text": "气泡检漏"}, {"letter": "D", "text": "肥皂水检漏"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K21 制冷设备压力保护装置认知", "stem": "制冷设备压力保护装置进行压力试验时使用（ ）来进行试验", "options": [{"letter": "A", "text": "氧气"}, {"letter": "B", "text": "氢气"}, {"letter": "C", "text": "氮气"}, {"letter": "D", "text": "二氧化碳"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K21 制冷设备压力保护装置认知", "stem": "释压装置的作用是（ ）", "options": [{"letter": "A", "text": "稳固装置"}, {"letter": "B", "text": "自动泄压、防止损坏系统"}, {"letter": "C", "text": "最大限度减少压强，防止装置发热"}, {"letter": "D", "text": "疏通气流"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K21 制冷设备压力保护装置认知", "stem": "氨制冷系统中，压力试验的压力定为1.8Mp的设备包括（ ）", "options": [{"letter": "A", "text": "蒸发器"}, {"letter": "B", "text": "冷凝器"}, {"letter": "C", "text": "氨液分离器"}, {"letter": "D", "text": "盐水槽"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K22 制冷系统中制冷剂与润滑油的认知", "stem": "润滑油在制冷系统中有润滑、冷却、（ ）、动力作用", "options": [{"letter": "A", "text": "绝缘"}, {"letter": "B", "text": "密封"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K22 制冷系统中制冷剂与润滑油的认知", "stem": "制冷系统中如制冷剂加注不足，则（ ）", "options": [{"letter": "A", "text": "视液镜看到有浑浊气泡"}, {"letter": "B", "text": "视液镜看到有连续不断、缓慢的气泡流动"}, {"letter": "C", "text": "视液镜看到有连续不断快速的气泡流动"}, {"letter": "D", "text": "视液镜看到有断断续续的快速的气泡流动"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K22 制冷系统中制冷剂与润滑油的认知", "stem": "润滑油在制冷系统中可引起（ ）、冷凝温度升高、蒸发温度下降", "options": [{"letter": "A", "text": "冷凝温度下降"}, {"letter": "B", "text": "排温下降"}, {"letter": "C", "text": "制冷量下降"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K22 制冷系统中制冷剂与润滑油的认知", "stem": "在制冷系统中制冷剂释放潜热的元件是（ ）", "options": [{"letter": "A", "text": "冷凝器"}, {"letter": "B", "text": "毛细管"}, {"letter": "C", "text": "蒸发器"}, {"letter": "D", "text": "制冷压缩机"}], "answer": "A", "type": "single", "source": "运行实操"}, {"subject": "K23 活塞式制冷压缩机正常工作时各部位温度测量操作", "stem": "安装温度计时，以下操作错误的是（ ）", "options": [{"letter": "A", "text": "选择好测量点"}, {"letter": "B", "text": "温度计感温部分不需要被测点贴实，简单接触即可"}, {"letter": "C", "text": "红外线温度计应瞄准被测点"}, {"letter": "D", "text": "准确读取测出温度"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K23 活塞式制冷压缩机正常工作时各部位温度测量操作", "stem": "活塞式制冷压缩机正常工件时使用（ ）进行温度测量", "options": [{"letter": "A", "text": "半导体点温计"}, {"letter": "B", "text": "水银温度计"}, {"letter": "C", "text": "温包式温度计"}], "answer": "A", "type": "single", "source": "运行实操"}, {"subject": "K24 制冷设备的压力保护和安全装置调整操作", "stem": "氨制冷系统不能使用的安全装置是（ ）", "options": [{"letter": "A", "text": "安全阀"}, {"letter": "B", "text": "易熔塞"}, {"letter": "C", "text": "压力继电器"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K24 制冷设备的压力保护和安全装置调整操作", "stem": "当制冷系统中利用高压压力保护器时，低压开关的触点通常（ ）并与接触器串联", "options": [{"letter": "A", "text": "闭合"}, {"letter": "B", "text": "断开"}], "answer": "A", "type": "single", "source": "运行实操"}, {"subject": "K24 制冷设备的压力保护和安全装置调整操作", "stem": "一个制冷循环中，当冷凝压力不变时，蒸发压力最合理的调整是（ ）", "options": [{"letter": "A", "text": "在满足工艺条件的前提下，尽量降低"}, {"letter": "B", "text": "不变"}, {"letter": "C", "text": "在满足工艺条件的前提下，尽量升高"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K24 制冷设备的压力保护和安全装置调整操作", "stem": "制冷空调设备的压力保护性继电器使电动机断电，重启电动机前必须（ ）", "options": [{"letter": "A", "text": "间接复位"}, {"letter": "B", "text": "自动复位"}, {"letter": "C", "text": "手动复位"}, {"letter": "D", "text": "无需操作"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K24 制冷设备的压力保护和安全装置调整操作", "stem": "高压压力保护器位于压缩机高压排气管线中，可以监控排气压力，控制器的触头在正常情况下是闭 合的，它与（ ）串连在一起", "options": [{"letter": "A", "text": "电源继电器"}, {"letter": "B", "text": "控制压缩机的接触器线圈"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K25 氨制冷系统的安全运行操作中危害及救护措施", "stem": "氨制冷系统的管道常采用（ ）", "options": [{"letter": "A", "text": "铜管"}, {"letter": "B", "text": "铅管"}, {"letter": "C", "text": "无缝钢管"}, {"letter": "D", "text": "铝管"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K25 氨制冷系统的安全运行操作中危害及救护措施", "stem": "氨制冷系统不宜采用（ ）阀门", "options": [{"letter": "A", "text": "铜制"}, {"letter": "B", "text": "钢制"}, {"letter": "C", "text": "塑料"}], "answer": "A", "type": "single", "source": "运行实操"}, {"subject": "K31 制冷压缩机产生“液击”的故障排队操作", "stem": "风管穿越防火墙时，必须安装（ ）", "options": [{"letter": "A", "text": "蝶阀"}, {"letter": "B", "text": "多叶调节阀"}, {"letter": "C", "text": "防火阀"}, {"letter": "D", "text": "止回阀"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K31 制冷压缩机产生“液击”的故障排队操作", "stem": "《建筑与空调工程施工质量验收规范》规定，防火阀直径或长边尺寸大于等于（ ）mm", "options": [{"letter": "A", "text": "500"}, {"letter": "B", "text": "600"}, {"letter": "C", "text": "630"}, {"letter": "D", "text": "300"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K31 制冷压缩机产生“液击”的故障排队操作", "stem": "为了防止压缩机的湿冲程和液击，制冷系统设置回热器实现供液与回气进行热交换，提高回气的 （ ）", "options": [{"letter": "A", "text": "湿度"}, {"letter": "B", "text": "过冷度"}, {"letter": "C", "text": "过热度"}, {"letter": "D", "text": "密度"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K31 制冷压缩机产生“液击”的故障排队操作", "stem": "连杆断裂是液击的典型特征和过程之一（ ）", "options": [{"letter": "A", "text": "是"}, {"letter": "B", "text": "否"}], "answer": "A", "type": "judge", "source": "运行实操"}, {"subject": "K31 制冷压缩机产生“液击”的故障排队操作", "stem": "（ ）是液击的典型特征和过程之一", "options": [{"letter": "A", "text": "换气阀片断裂"}, {"letter": "B", "text": "吸气阀片断裂"}, {"letter": "C", "text": "排气阀片断裂"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K31 制冷压缩机产生“液击”的故障排队操作", "stem": "由于（ ）被压缩机吸入，造成压缩机的异常冲击的事故", "options": [{"letter": "A", "text": "制冷剂液体（或润滑油）"}, {"letter": "B", "text": "水"}, {"letter": "C", "text": "空气"}, {"letter": "D", "text": "灰尘"}], "answer": "A", "type": "single", "source": "运行实操"}, {"subject": "K31 制冷压缩机产生“液击”的故障排队操作", "stem": "（ ）主要出现在活塞式压缩机中", "options": [{"letter": "A", "text": "水击"}, {"letter": "B", "text": "气击"}, {"letter": "C", "text": "活塞"}, {"letter": "D", "text": "液击"}], "answer": "D", "type": "single", "source": "运行实操"}, {"subject": "K31 制冷压缩机产生“液击”的故障排队操作", "stem": "氨系统开机后，应缓慢打开吸气阀，目的是防止压缩机（ ）", "options": [{"letter": "A", "text": "排气压力高"}, {"letter": "B", "text": "液击"}, {"letter": "C", "text": "吸气压力高"}, {"letter": "D", "text": "油温低"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K31 制冷压缩机产生“液击”的故障排队操作", "stem": "以下选项中，哪个方法是无法避免和排除“液击”保障的（ ）", "options": [{"letter": "A", "text": "增加制冷剂充注量"}, {"letter": "B", "text": "增设曲轴箱加热器"}, {"letter": "C", "text": "增设回气管过热加热器"}, {"letter": "D", "text": "增设吸气管气液分离器"}], "answer": "A", "type": "single", "source": "运行实操"}, {"subject": "K32 空调设备中安全阀的认知", "stem": "安全阀的起跳压力是指（ ）", "options": [{"letter": "A", "text": "安全阀的定压"}, {"letter": "B", "text": "安全阀达到最大泄放能力的压力"}, {"letter": "C", "text": "设备的最高操作压力"}, {"letter": "D", "text": "设备的设计压力"}], "answer": "A", "type": "single", "source": "运行实操"}, {"subject": "K32 空调设备中安全阀的认知", "stem": "以下安全阀安装位置叙述错误的是（ ）", "options": [{"letter": "A", "text": "应垂直安装"}, {"letter": "B", "text": "出口处应无压力，避免产生受压现象"}, {"letter": "C", "text": "安装前应专门测试，检查其密闭性"}, {"letter": "D", "text": "一般安装在系统的进水端远离膨胀罐的位置"}], "answer": "D", "type": "single", "source": "运行实操"}, {"subject": "K32 空调设备中安全阀的认知", "stem": "安全阀的设定值可以随意调整（ ）", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "B", "type": "judge", "source": "运行实操"}, {"subject": "K32 空调设备中安全阀的认知", "stem": "当受压容器内制冷压力超过规定值时，能够自动打开的阀门是（ ）", "options": [{"letter": "A", "text": "安全阀"}, {"letter": "B", "text": "直通阀"}, {"letter": "C", "text": "压力阀"}, {"letter": "D", "text": "溢流阀"}], "answer": "A", "type": "single", "source": "运行实操"}, {"subject": "K32 空调设备中安全阀的认知", "stem": "压力容器的安全阀一般每（ ）年至少应校验一次", "options": [{"letter": "A", "text": "半"}, {"letter": "B", "text": "一"}, {"letter": "C", "text": "二"}, {"letter": "D", "text": "三"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K32 空调设备中安全阀的认知", "stem": "不同品牌和种类的压缩机油可以短时间混用（ ）", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "B", "type": "judge", "source": "运行实操"}, {"subject": "K32 空调设备中安全阀的认知", "stem": "在冷凝器储液器等高压设备的安全阀，当压力达到（ ）Mpa时，应能自动开启", "options": [{"letter": "A", "text": "1.8"}, {"letter": "B", "text": "1.5"}, {"letter": "C", "text": "2.0"}, {"letter": "D", "text": "1.6"}], "answer": "A", "type": "single", "source": "运行实操"}, {"subject": "K32 空调设备中安全阀的认知", "stem": "以下方法中，哪个处理安全阀启跳后的措施是最合理的（ ）", "options": [{"letter": "A", "text": "开小节流阀的开度"}, {"letter": "B", "text": "开大节流阀的开度"}, {"letter": "C", "text": "重启空调"}, {"letter": "D", "text": "更换安全阀"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K32 空调设备中安全阀的认知", "stem": "制冷系统的压力安全阀可以安装在下列何位置（ ）", "options": [{"letter": "A", "text": "压缩机下"}, {"letter": "B", "text": "贮液干燥器上"}, {"letter": "C", "text": "贮液器上"}, {"letter": "D", "text": "冷凝器上"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K32 空调设备中安全阀的认知", "stem": "当安全阀的入口压力与出口压力差超过设定值时，阀盘被顶开，阀盘一旦离开阀座，它下部的受压 面积突然（ ）", "options": [{"letter": "A", "text": "不变"}, {"letter": "B", "text": "下降"}, {"letter": "C", "text": "增加"}, {"letter": "D", "text": "起伏"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K32 空调设备中安全阀的认知", "stem": "安全阀开启压力要（ ）于系统设计压力", "options": [{"letter": "A", "text": "大"}, {"letter": "B", "text": "小"}, {"letter": "C", "text": "等"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K32 空调设备中安全阀的认知", "stem": "安全阀设定值压力应高于设计压力的（ ）", "options": [{"letter": "A", "text": "1倍至2倍"}, {"letter": "B", "text": "1倍至3倍"}, {"letter": "C", "text": "1.05倍至1.1倍"}, {"letter": "D", "text": "10倍"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K32 空调设备中安全阀的认知", "stem": "在制冷系统中，以下属于安全装置的是（ ）", "options": [{"letter": "A", "text": "过滤器"}, {"letter": "B", "text": "安全阀"}, {"letter": "C", "text": "紧急泄氨器"}, {"letter": "D", "text": "压缩机"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K33 制冷系统检漏的操作", "stem": "螺杆式制冷压缩机或制冷机组在制造时已经过严格的压力检漏和真空检漏，但经过运输和现场吊 装，有可能会影响机器的密封性，因此在机器安装结束后，还须进行压力复验（ ）", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "运行实操"}, {"subject": "K33 制冷系统检漏的操作", "stem": "试纸检漏中，一般使用何种材料（ ）", "options": [{"letter": "A", "text": "竹叶纸"}, {"letter": "B", "text": "白纸"}, {"letter": "C", "text": "酚酞纸"}, {"letter": "D", "text": "棉麻纸"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K33 制冷系统检漏的操作", "stem": "制冷系统常用的检漏方法有（ ）", "options": [{"letter": "A", "text": "肥皂水检漏"}, {"letter": "B", "text": "高压充液检漏"}, {"letter": "C", "text": "抽真空检漏"}, {"letter": "D", "text": "高压充气检漏"}], "answer": "A", "type": "single", "source": "运行实操"}, {"subject": "K33 制冷系统检漏的操作", "stem": "在氨系统的检漏中，使用试纸检漏，试纸呈现什么颜色表示某处有泄漏（ ）", "options": [{"letter": "A", "text": "黄色"}, {"letter": "B", "text": "绿色"}, {"letter": "C", "text": "粉红色"}, {"letter": "D", "text": "银灰色"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K33 制冷系统检漏的操作", "stem": "（多选题）制冷系统常用的检漏方法有（ ）", "options": [{"letter": "A", "text": "肥皂水检漏"}, {"letter": "B", "text": "高压充液检漏"}, {"letter": "C", "text": "仪器检漏"}, {"letter": "D", "text": "抽真空检漏"}, {"letter": "E", "text": "高压充气检漏"}], "answer": "AC", "type": "multiple", "source": "运行实操"}, {"subject": "K33 制冷系统检漏的操作", "stem": "氨系统运行过程中的检漏应采用的手段是（ ）", "options": [{"letter": "A", "text": "卤素灯"}, {"letter": "B", "text": "肥皂水"}, {"letter": "C", "text": "凭嗅觉"}, {"letter": "D", "text": "用手摸，来感受"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K33 制冷系统检漏的操作", "stem": "设备运行时检查设备容器及管道是否漏气时，只用（ ）试验", "options": [{"letter": "A", "text": "肥皂水"}, {"letter": "B", "text": "氧气"}, {"letter": "C", "text": "氮气"}, {"letter": "D", "text": "压缩空气"}], "answer": "A", "type": "single", "source": "运行实操"}, {"subject": "K33 制冷系统检漏的操作", "stem": "甲说：肥皂水检漏只能用于空调系统低压侧；乙说：空调系统不工作时，肥皂水检漏既可用于低压 侧也可用于高压侧，谁正确（ ）", "options": [{"letter": "A", "text": "甲正确"}, {"letter": "B", "text": "乙正确"}, {"letter": "C", "text": "两人均正确"}, {"letter": "D", "text": "两人均不正确"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K33 制冷系统检漏的操作", "stem": "我们可以使用化学试纸对氨制冷系统进行检漏，如果发生氨泄漏，则试纸的颜色变成（ ）", "options": [{"letter": "A", "text": "浅颜色"}, {"letter": "B", "text": "深绿色"}, {"letter": "C", "text": "粉红色"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K33 制冷系统检漏的操作", "stem": "卤素仪检漏的原理是：氟利昂制冷剂中含有氟、溴、氯等卤素成分，当它们遇到灼热的铜件时候， 便可以产生不同颜色的火焰，以达到检漏的目的（ ）", "options": [{"letter": "A", "text": "是"}, {"letter": "B", "text": "否"}], "answer": "A", "type": "judge", "source": "运行实操"}, {"subject": "K33 制冷系统检漏的操作", "stem": "如果溴化锂吸收式机组内充入氮气保养，在机组启动前的抽方法是：首先将机组内的氮气的压力降 至大气压力，关闭机组所有通向大气的阀门，然后启动真空泵，启动真空泵要求（ ）", "options": [{"letter": "A", "text": "缓慢打开主抽气阀"}, {"letter": "B", "text": "快速打开主抽气阀"}, {"letter": "C", "text": "不打开主抽气阀"}, {"letter": "D", "text": "拧死主抽气阀"}], "answer": "A", "type": "single", "source": "运行实操"}, {"subject": "K33 制冷系统检漏的操作", "stem": "旋片式机械真空泵适于 范围内和进气压力小于1330Pa的条件下对制冷系统进行抽真空 （ ）", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "运行实操"}, {"subject": "K33 制冷系统检漏的操作", "stem": "氯制冷系统的检漏时如果发现泄漏，应（ ）", "options": [{"letter": "A", "text": "立即进行补焊"}, {"letter": "B", "text": "减压后进行补焊"}, {"letter": "C", "text": "抽真空后进行补焊"}, {"letter": "D", "text": "加压后进行补焊"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K34 真空泵的正确使用操作", "stem": "溴化锂吸收式制冷机组的运转时，真空泵抽气能力下降，其可能的原因是（ ）", "options": [{"letter": "A", "text": "冷媒水中结晶"}, {"letter": "B", "text": "真空泵排气阀损坏"}, {"letter": "C", "text": "电压降低"}, {"letter": "D", "text": "电流降低"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K34 真空泵的正确使用操作", "stem": "用真空泵抽真空的方式通常不含（ ）抽真空", "options": [{"letter": "A", "text": "低压侧"}, {"letter": "B", "text": "双侧"}, {"letter": "C", "text": "干燥"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K34 真空泵的正确使用操作", "stem": "用真空泵抽真空的方式通常不含（ ）", "options": [{"letter": "A", "text": "低压侧抽真空"}, {"letter": "B", "text": "双侧抽真空"}, {"letter": "C", "text": "干燥真空"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K34 真空泵的正确使用操作", "stem": "在进行真空试漏之前，先要进行试漏时采用的是（ ）", "options": [{"letter": "A", "text": "压力"}, {"letter": "B", "text": "氨"}, {"letter": "C", "text": "氟利昂"}], "answer": "A", "type": "single", "source": "运行实操"}, {"subject": "K34 真空泵的正确使用操作", "stem": "螺杆式空压机属于容积式空压机（ ）", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "运行实操"}, {"subject": "K34 真空泵的正确使用操作", "stem": "真空泵在运行过程中，（ ）不能超过环境温度 ，最高温度不得超过", "options": [{"letter": "A", "text": "电机壳体温度"}, {"letter": "B", "text": "轴承温度"}, {"letter": "C", "text": "管道温度"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K34 真空泵的正确使用操作", "stem": "溴化锂吸收式机组中，检查真空泵油应检查的内容不包括（ ）", "options": [{"letter": "A", "text": "油的牌号"}, {"letter": "B", "text": "油的包装"}, {"letter": "C", "text": "油位"}, {"letter": "D", "text": "油质"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K34 真空泵的正确使用操作", "stem": "真空泵对制冷系统抽空完毕，应（ ）", "options": [{"letter": "A", "text": "先关闭截止阀再关闭真空泵"}, {"letter": "B", "text": "使真空泵和截止阀随机关"}, {"letter": "C", "text": "先关闭真空泵再关闭截止阀"}, {"letter": "D", "text": "使真空泵和截止阀同时关闭"}], "answer": "A", "type": "single", "source": "运行实操"}, {"subject": "K35 螺杆式冷水机组中有关安全保护器件认知操作", "stem": "下面（ ）压缩机气体压缩、排气过程最为缓慢，流动损失最小", "options": [{"letter": "A", "text": "活塞式"}, {"letter": "B", "text": "滚动转子式"}, {"letter": "C", "text": "涡旋式"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K35 螺杆式冷水机组中有关安全保护器件认知操作", "stem": "螺杆式制冷压缩机阴转子与电动机联接为主动转子，同时通过啮合关系带动阳转子旋转（ ）", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "B", "type": "judge", "source": "运行实操"}, {"subject": "K35 螺杆式冷水机组中有关安全保护器件认知操作", "stem": "螺杆式冷水机组的制冷量范围是（ ）", "options": [{"letter": "A", "text": "50-180KW"}, {"letter": "B", "text": "10-1200KW"}, {"letter": "C", "text": "120-2200KW"}, {"letter": "D", "text": "350-3500KW"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K35 螺杆式冷水机组中有关安全保护器件认知操作", "stem": "采用压力继电器的顺序回路（ ）", "options": [{"letter": "A", "text": "回路复杂"}, {"letter": "B", "text": "应用较少"}, {"letter": "C", "text": "十分可靠"}, {"letter": "D", "text": "调压讲究"}], "answer": "D", "type": "single", "source": "运行实操"}, {"subject": "K35 螺杆式冷水机组中有关安全保护器件认知操作", "stem": "螺杆式冷水机组运行中，油泵油封漏油，主要原因是（ ）", "options": [{"letter": "A", "text": "油量过小"}, {"letter": "B", "text": "油量过大"}, {"letter": "C", "text": "油路堵塞"}, {"letter": "D", "text": "磨损"}], "answer": "D", "type": "single", "source": "运行实操"}, {"subject": "K35 螺杆式冷水机组中有关安全保护器件认知操作", "stem": "离心式、螺杆式制冷机试运转进行能量调节时应监视电机的（ ）", "options": [{"letter": "A", "text": "工作电压"}, {"letter": "B", "text": "工作电流"}, {"letter": "C", "text": "转速"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K35 螺杆式冷水机组中有关安全保护器件认知操作", "stem": "螺杆式冷水机组运行中制冷压缩机油面上升，应采取（ ）排队故障", "options": [{"letter": "A", "text": "停机检查"}, {"letter": "B", "text": "提高油温"}, {"letter": "C", "text": "调整油压"}, {"letter": "D", "text": "检查油泵"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K42 空调制冷系统中截止阀安全操作", "stem": "压缩机截止阀多用通道处于关闭状态时，所接压力表将失去作用（ ）", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "运行实操"}, {"subject": "K42 空调制冷系统中截止阀安全操作", "stem": "压缩机采用双阀座截止阀是为了（ ）", "options": [{"letter": "A", "text": "加强阀气密性"}, {"letter": "B", "text": "减小阀流动阻力"}, {"letter": "C", "text": "可启闭多用通道"}, {"letter": "D", "text": "提高阀使用寿命"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K42 空调制冷系统中截止阀安全操作", "stem": "氟利昂制冷系统用截止阀不带手柄（ ）", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "运行实操"}, {"subject": "K42 空调制冷系统中截止阀安全操作", "stem": "截止阀阀体、接管或焊点有泄漏冷媒时一般表面油脂较多，确认系统尚有冷媒后，在其表面涂上肥 皂水，如果有气泡产生，说明泄漏冷媒，在以下哪个位置有气泡，可以不用直接更换截止阀（ ）", "options": [{"letter": "A", "text": "连接管"}, {"letter": "B", "text": "紫铜管焊接处"}, {"letter": "C", "text": "阀芯"}, {"letter": "D", "text": "气门芯"}], "answer": "A", "type": "single", "source": "运行实操"}, {"subject": "K42 空调制冷系统中截止阀安全操作", "stem": "制冷压缩机双阀座截止多用通道接压力表时，使用中（ ）", "options": [{"letter": "A", "text": "要么全开，要么全关"}, {"letter": "B", "text": "开启时开一半为宜"}, {"letter": "C", "text": "可启闭多用通道"}, {"letter": "D", "text": "提高阀使用寿命"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K42 空调制冷系统中截止阀安全操作", "stem": "截止阀与室内外连接管螺母连接的螺纹滑丝，主要产生原因为安装时操作不合理、用力过大造成 （ ）", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "运行实操"}, {"subject": "K43 空气调节系统中风管防火阀认知", "stem": "以下选项中，哪个方法是无法避免和排队“液击”故障的（ ）", "options": [{"letter": "A", "text": "增加制冷剂充注量"}, {"letter": "B", "text": "增设曲轴箱加热器"}, {"letter": "C", "text": "增设回气管过热加热器"}, {"letter": "D", "text": "增设吸气管气液分离器"}], "answer": "A", "type": "single", "source": "运行实操"}, {"subject": "K43 空气调节系统中风管防火阀认知", "stem": "以下发生“液击”可能的原因分析错误的是（ ）", "options": [{"letter": "A", "text": "回液，即从蒸发器中流回压缩机的液态制冷剂或润滑油"}, {"letter": "B", "text": "压缩机内压力过高，造成气体被压缩成液体"}, {"letter": "C", "text": "带液启动"}, {"letter": "D", "text": "压缩机内的润滑油太多"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K43 空气调节系统中风管防火阀认知", "stem": "连杆断裂是液击的典型特征和过程之一（ ）", "options": [{"letter": "A", "text": "是"}, {"letter": "B", "text": "否"}], "answer": "A", "type": "judge", "source": "运行实操"}, {"subject": "K43 空气调节系统中风管防火阀认知", "stem": "防火阀是指安装在通风、空调系统的送、回风管路上，平时呈开户状态，火灾时当管道内气体温度 达到公称动作温度关闭，在一定时间内满足耐火稳定性和耐火完整性要求，起隔烟阻火作用的阀门，对 于安装在公共建筑内厨房的排油烟管道与竖向排风管连接的支管处设置的防火阀，公称动作温度为 （ ）", "options": [{"letter": "A", "text": "70"}, {"letter": "B", "text": "150"}, {"letter": "C", "text": "200"}, {"letter": "D", "text": "280"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K43 空气调节系统中风管防火阀认知", "stem": "通风、空气调节系统的风管在（ ）不应该设置防火阀", "options": [{"letter": "A", "text": "穿越防火分区处"}, {"letter": "B", "text": "穿越防烟分区处"}, {"letter": "C", "text": "穿越通风、空气调节机房隔墙和楼板处"}, {"letter": "D", "text": "穿越重要或火灾危险性大的房间隔墙和楼板处"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K43 空气调节系统中风管防火阀认知", "stem": "在（ ），通风、空气调节系统的风管应设防火阀", "options": [{"letter": "A", "text": "管道穿越防火分区处"}, {"letter": "B", "text": "垂直风管与每层水平风管交接处的水平管段上"}, {"letter": "C", "text": "穿越通风、空气调节机房及重要的或火灾危险性大的房间隔墙和楼板处"}, {"letter": "D", "text": "穿越变形缝处的一侧"}], "answer": "D", "type": "single", "source": "运行实操"}, {"subject": "K43 空气调节系统中风管防火阀认知", "stem": "下列哪个情况的通风、空气调节系统的风管上不需要设防火阀（ ）", "options": [{"letter": "A", "text": "穿越防火分区处"}, {"letter": "B", "text": "穿越变形缝两侧"}, {"letter": "C", "text": "穿越通风、空气调节机房的房间隔墙和楼板处"}, {"letter": "D", "text": "穿越重要的或火灾危险性大的房间隔墙和楼板处"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K43 空气调节系统中风管防火阀认知", "stem": "《通风与空调工程施工质量验收规范》规定，防火阀直径或长边尺寸大于等于（ ）mm时，宜设独立 支、吊架", "options": [{"letter": "A", "text": "500"}, {"letter": "B", "text": "600"}, {"letter": "C", "text": "630"}, {"letter": "D", "text": "300"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K43 空气调节系统中风管防火阀认知", "stem": "《建筑设计防火规范》中规定，送风、回风总管穿过机房的隔墙和楼板处的通风、空气调节系统的 送风、回风管，可不设防火阀（ ）", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "B", "type": "judge", "source": "运行实操"}, {"subject": "K43 空气调节系统中风管防火阀认知", "stem": "风管穿越防火墙时，必须安装（ ）", "options": [{"letter": "A", "text": "蝶阀"}, {"letter": "B", "text": "多叶调节阀"}, {"letter": "C", "text": "防火阀"}, {"letter": "D", "text": "止回阀"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K43 空气调节系统中风管防火阀认知", "stem": "高层民用建筑通风空调风管，下列哪种情况可不设防火阀（ ）", "options": [{"letter": "A", "text": "穿越防火分区处"}, {"letter": "B", "text": "穿越通风、空调机房及重要的火灾危险性大的房间隔墙和楼板处"}, {"letter": "C", "text": "水平总骨的分支管段上"}, {"letter": "D", "text": "穿越变形缝的两侧"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K44 氨对人体的伤害认知", "stem": "液氨是无色有刺激性气味的气体，低浓度时氨对黏膜有刺激作用，高浓度时可造成组织溶解坏死 （ ）", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "运行实操"}, {"subject": "K44 氨对人体的伤害认知", "stem": "若皮肤接触液氨，应立即脱去污染的衣着，并用百分之2的硼酸洗液或清水彻底冲洗就医（ ）", "options": [{"letter": "A", "text": "正确"}, {"letter": "B", "text": "错误"}], "answer": "A", "type": "judge", "source": "运行实操"}, {"subject": "K44 氨对人体的伤害认知", "stem": "应急处理不慎吸入大师氨气的人员时，应让其饮（ ）", "options": [{"letter": "A", "text": "茶水"}, {"letter": "B", "text": "柠檬水"}, {"letter": "C", "text": "冰水"}, {"letter": "D", "text": "矿水"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K44 氨对人体的伤害认知", "stem": "若氨气对呼吸道造成危害，应迅速脱离现场至空气新鲜处，保持呼吸道畅通，如呼吸困难，进行输 氧；如呼吸停止，立即进行人工呼吸，并迅速就医（ ）", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "运行实操"}, {"subject": "K44 氨对人体的伤害认知", "stem": "当空气中氨蒸气容积浓度达到16%-25%时就发生（ ）", "options": [{"letter": "A", "text": "窒息"}, {"letter": "B", "text": "电击"}, {"letter": "C", "text": "爆炸"}, {"letter": "D", "text": "辐射"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K45 热氨融霜的安全操作", "stem": "热氨融霜时，进入蒸发器前的压力不得超过（ ）", "options": [{"letter": "A", "text": "3.0Mpa"}, {"letter": "B", "text": "1.8Mpa"}, {"letter": "C", "text": "0.8Mpa"}], "answer": "C", "type": "single", "source": "运行实操"}, {"subject": "K45 热氨融霜的安全操作", "stem": "冷库采用热氨融霜操作时，系统无排液桶，利用低压循环桶做排液桶，必须减少自贮液器来的液氨 量，使低压循环桶内的液面高度不高于（ ）", "options": [{"letter": "A", "text": "10%"}, {"letter": "B", "text": "20%"}, {"letter": "C", "text": "30%"}, {"letter": "D", "text": "40%"}], "answer": "D", "type": "single", "source": "运行实操"}, {"subject": "K45 热氨融霜的安全操作", "stem": "例行检查补水箱的水量，自动排气阀的条件及循环水泵的密封情况，应该是多长时间一次（ ）", "options": [{"letter": "A", "text": "半个月"}, {"letter": "B", "text": "1个月"}, {"letter": "C", "text": "半年"}, {"letter": "D", "text": "1年"}], "answer": "A", "type": "single", "source": "运行实操"}, {"subject": "K45 热氨融霜的安全操作", "stem": "排液时，排液桶贮氨量不应超过（ ），待蒸发器内液体排完后，关闭热氨冲霜总阀、分调节站热氨 冲霜阀、分调节站冲霜回液阀及冲霜回液总阀，停止热氨部霜。", "options": [{"letter": "A", "text": "70%"}, {"letter": "B", "text": "80%"}, {"letter": "C", "text": "90%"}, {"letter": "D", "text": "100%"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K45 热氨融霜的安全操作", "stem": "当冷库排管表面霜层融尽时，应立即关闭以下各阀（ ）", "options": [{"letter": "A", "text": "调节站上的制冷阀"}, {"letter": "B", "text": "调节站热氨总阀"}, {"letter": "C", "text": "排液桶上的出液阀"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K45 热氨融霜的安全操作", "stem": "将制冷系统管路中的“T”字形连接改为顺制冷剂流流动方向连接的方式，以减少管道的阻力损失和 可能产生液锤时所造成的冲击力（ ）", "options": [{"letter": "A", "text": "对"}, {"letter": "B", "text": "错"}], "answer": "A", "type": "judge", "source": "运行实操"}, {"subject": "K45 热氨融霜的安全操作", "stem": "停机时要按步骤停机，先停好制冷压缩机，需要延长多长时间，才能再停循环水泵，最后停车间风 机（ ）", "options": [{"letter": "A", "text": "15分钟"}, {"letter": "B", "text": "20分钟"}, {"letter": "C", "text": "25分钟"}, {"letter": "D", "text": "30分钟"}], "answer": "A", "type": "single", "source": "运行实操"}, {"subject": "K45 热氨融霜的安全操作", "stem": "氨系统进行融霜时，经常采用的方法有（ ）", "options": [{"letter": "B", "text": "热氨融霜"}, {"letter": "C", "text": "表面电加热融霜"}, {"letter": "D", "text": "水冲霜"}], "answer": "B", "type": "single", "source": "运行实操"}, {"subject": "K45 热氨融霜的安全操作", "stem": "热氨融霜时应先关闭供液电磁阀，延时（ ）分钟，再关闭回气电磁主阀和冷风机然后打开热氨电磁 阀", "options": [{"letter": "A", "text": "0-5"}, {"letter": "B", "text": "5-10"}, {"letter": "C", "text": "10-15"}, {"letter": "D", "text": "15-20"}], "answer": "B", "type": "single", "source": "运行实操"}];
+
+let currentMode = 'all';
+let currentSubject = null;
+let quizQuestions = [];
+let currentIndex = 0;
+let selectedAnswers = {};
+let answeredMap = {};
+let correctMap = {};
+
+const STORAGE_KEY = 'refrigeration_quiz_v1';
+
+function loadProgress() {
+  try {
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    return {
+      answered: data.answered || {},
+      wrong: data.wrong || {},
+      correct: data.correct || {}
+    };
+  } catch(e) { return { answered: {}, wrong: {}, correct: {} }; }
+}
+
+function saveProgress(progress) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+}
+
+let progress = loadProgress();
+
+function init() {
+  updateStats();
+  renderSubjectList();
+}
+
+function updateStats() {
+  const total = ALL_QUESTIONS.length;
+  const doneCount = Object.keys(progress.answered).length;
+  const wrongCount = Object.keys(progress.wrong).length;
+  
+  let correctCount = 0;
+  let totalAnswered = 0;
+  for (let key in progress.answered) {
+    totalAnswered++;
+    if (progress.correct[key]) correctCount++;
+  }
+  const accuracy = totalAnswered > 0 ? Math.round(correctCount / totalAnswered * 100) : 0;
+  
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-done').textContent = doneCount;
+  document.getElementById('stat-correct').textContent = accuracy + '%';
+  document.getElementById('stat-wrong').textContent = wrongCount;
+}
+
+function renderSubjectList() {
+  const listEl = document.getElementById('subject-list');
+  const subjects = {};
+  ALL_QUESTIONS.forEach((q, idx) => {
+    if (!subjects[q.subject]) subjects[q.subject] = [];
+    subjects[q.subject].push(idx);
+  });
+  
+  let html = '';
+  const allDone = ALL_QUESTIONS.every((_, i) => progress.answered[i]);
+  html += `<div class="subject-item" onclick="startQuiz(null)">
+    <span class="name">📚 全部题目（${ALL_QUESTIONS.length}题）</span>
+    <span class="count ${allDone ? 'done' : ''}">${allDone ? '已完成' : '点击开始'}</span>
+  </div>`;
+  
+  for (let subj in subjects) {
+    const indices = subjects[subj];
+    const doneCount = indices.filter(i => progress.answered[i]).length;
+    const isDone = doneCount === indices.length;
+    html += `<div class="subject-item" onclick="startQuiz('${subj.replace(/'/g, "\'")}')">
+      <span class="name">${subj}</span>
+      <span class="count ${isDone ? 'done' : ''}">${doneCount}/${indices.length}</span>
+    </div>`;
+  }
+  
+  listEl.innerHTML = html;
+}
+
+function switchMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
+  renderSubjectList();
+}
+
+function startQuiz(subject) {
+  currentSubject = subject;
+  
+  let indices = [];
+  for (let i = 0; i < ALL_QUESTIONS.length; i++) {
+    if (subject && ALL_QUESTIONS[i].subject !== subject) continue;
+    if (currentMode === 'wrong') {
+      if (progress.wrong[i]) indices.push(i);
+    } else {
+      indices.push(i);
+    }
+  }
+  
+  if (currentMode === 'random') {
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+  }
+  
+  if (indices.length === 0) {
+    alert(currentMode === 'wrong' ? '太棒了，没有错题！' : '该科目暂无题目');
+    return;
+  }
+  
+  quizQuestions = indices;
+  currentIndex = 0;
+  selectedAnswers = {};
+  answeredMap = {};
+  correctMap = {};
+  
+  document.getElementById('home-view').style.display = 'none';
+  document.getElementById('result-view').style.display = 'none';
+  document.getElementById('quiz-view').style.display = 'block';
+  
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const qIdx = quizQuestions[currentIndex];
+  const q = ALL_QUESTIONS[qIdx];
+  
+  const pct = Math.round((currentIndex + 1) / quizQuestions.length * 100);
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('question-num').textContent = (currentIndex + 1) + '/' + quizQuestions.length;
+  
+  let typeLabel = '单选题';
+  let typeClass = 'single';
+  if (q.type === 'multiple') { typeLabel = '多选题'; typeClass = 'multiple'; }
+  else if (q.type === 'judge') { typeLabel = '判断题'; typeClass = 'judge'; }
+  
+  const isAnswered = !!answeredMap[currentIndex];
+  const selected = selectedAnswers[currentIndex] || [];
+  
+  let optionsHtml = '';
+  q.options.forEach(opt => {
+    let cls = 'option-item';
+    if (isAnswered) {
+      cls += ' disabled';
+      if (q.answer.includes(opt.letter)) cls += ' correct';
+      else if (selected.includes(opt.letter)) cls += ' wrong';
+    } else if (selected.includes(opt.letter)) {
+      cls += ' selected';
+    }
+    optionsHtml += `<div class="${cls}" onclick="selectOption('${opt.letter}')">
+      <span class="letter">${opt.letter}</span>
+      <span>${opt.text}</span>
+    </div>`;
+  });
+  
+  let answerPanelHtml = '';
+  if (isAnswered) {
+    const isCorrect = correctMap[currentIndex];
+    answerPanelHtml = `<div class="answer-panel show ${isCorrect ? 'right' : 'wrong'}">
+      ${isCorrect ? '✓ 回答正确' : '✗ 回答错误'}　正确答案：${q.answer}
+    </div>`;
+  }
+  
+  // 按钮显示逻辑：多选题未答时显示"提交答案"，已答或单选/判断显示"下一题"
+  const submitBtn = document.getElementById('btn-submit');
+  const nextBtn = document.getElementById('btn-next');
+  
+  if (q.type === 'multiple' && !isAnswered) {
+    submitBtn.style.display = 'block';
+    nextBtn.style.display = 'none';
+  } else {
+    submitBtn.style.display = 'none';
+    nextBtn.style.display = 'block';
+    if (currentIndex === quizQuestions.length - 1) {
+      nextBtn.textContent = '完成';
+    } else {
+      nextBtn.textContent = '下一题';
+    }
+  }
+  
+  document.getElementById('question-card').innerHTML = `
+    <div>
+      <span class="q-type-tag ${typeClass}">${typeLabel}</span>
+      <span class="q-source-tag">${q.source}</span>
+    </div>
+    <div class="q-subject">${q.subject}</div>
+    <div class="q-stem">${q.stem}</div>
+    <div class="options-list">${optionsHtml}</div>
+    ${answerPanelHtml}
+  `;
+}
+
+function selectOption(letter) {
+  if (answeredMap[currentIndex]) return;
+  
+  const qIdx = quizQuestions[currentIndex];
+  const q = ALL_QUESTIONS[qIdx];
+  
+  if (!selectedAnswers[currentIndex]) selectedAnswers[currentIndex] = [];
+  
+  if (q.type === 'multiple') {
+    // 多选题：切换选中状态，可多选
+    const idx = selectedAnswers[currentIndex].indexOf(letter);
+    if (idx >= 0) selectedAnswers[currentIndex].splice(idx, 1);
+    else selectedAnswers[currentIndex].push(letter);
+    selectedAnswers[currentIndex].sort();
+    renderQuestion();
+  } else {
+    // 单选/判断：直接选择并判分
+    selectedAnswers[currentIndex] = [letter];
+    judgeAnswer();
+  }
+}
+
+function submitAnswer() {
+  // 多选题提交答案
+  if (!selectedAnswers[currentIndex] || selectedAnswers[currentIndex].length === 0) {
+    alert('请至少选择一个选项');
+    return;
+  }
+  judgeAnswer();
+}
+
+function judgeAnswer() {
+  const qIdx = quizQuestions[currentIndex];
+  const q = ALL_QUESTIONS[qIdx];
+  const selected = selectedAnswers[currentIndex] || [];
+  
+  const sortedSelected = [...selected].sort().join('');
+  const sortedAnswer = [...q.answer].sort().join('');
+  const isCorrect = sortedSelected === sortedAnswer;
+  
+  answeredMap[currentIndex] = true;
+  correctMap[currentIndex] = isCorrect;
+  
+  progress.answered[qIdx] = true;
+  if (isCorrect) {
+    progress.correct[qIdx] = true;
+    delete progress.wrong[qIdx];
+  } else {
+    progress.wrong[qIdx] = true;
+    delete progress.correct[qIdx];
+  }
+  saveProgress(progress);
+  updateStats();
+  
+  renderQuestion();
+}
+
+function prevQuestion() {
+  if (currentIndex > 0) {
+    currentIndex--;
+    renderQuestion();
+  }
+}
+
+function nextQuestion() {
+  if (currentIndex < quizQuestions.length - 1) {
+    currentIndex++;
+    renderQuestion();
+  } else {
+    showResult();
+  }
+}
+
+function showResult() {
+  document.getElementById('quiz-view').style.display = 'none';
+  document.getElementById('result-view').style.display = 'block';
+  
+  let correctCount = 0;
+  for (let i in correctMap) {
+    if (correctMap[i]) correctCount++;
+  }
+  const total = quizQuestions.length;
+  const accuracy = Math.round(correctCount / total * 100);
+  
+  let emoji = '🎉';
+  let comment = '继续保持！';
+  if (accuracy >= 90) { emoji = '🏆'; comment = '优秀！考试稳了！'; }
+  else if (accuracy >= 80) { emoji = '😊'; comment = '不错，再巩固一下错题！'; }
+  else if (accuracy >= 60) { emoji = '💪'; comment = '还需加油，多刷几遍！'; }
+  else { emoji = '📖'; comment = '别灰心，从头再来！'; }
+  
+  document.getElementById('result-view').innerHTML = `
+    <div class="result-card">
+      <div style="font-size:48px;">${emoji}</div>
+      <h2>${comment}</h2>
+      <div class="result-score">${accuracy}分</div>
+      <div class="result-detail">
+        <div class="item">
+          <div class="num" style="color:#1a73e8;">${total}</div>
+          <div class="label">总题数</div>
+        </div>
+        <div class="item">
+          <div class="num" style="color:#137333;">${correctCount}</div>
+          <div class="label">答对</div>
+        </div>
+        <div class="item">
+          <div class="num" style="color:#c5221f;">${total - correctCount}</div>
+          <div class="label">答错</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:20px;">
+        <button class="nav-buttons" style="flex:1;" onclick="goHome()">返回首页</button>
+        <button class="nav-buttons" style="flex:1;background:#1a73e8;color:white;" onclick="startQuiz(currentSubject)">再练一次</button>
+      </div>
+    </div>
+  `;
+}
+
+function goHome() {
+  document.getElementById('quiz-view').style.display = 'none';
+  document.getElementById('result-view').style.display = 'none';
+  document.getElementById('home-view').style.display = 'block';
+  updateStats();
+  renderSubjectList();
+}
+
+init();
+</script>
+</body>
+</html>
